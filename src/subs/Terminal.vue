@@ -1,0 +1,454 @@
+<template>
+  <div class="terminal-container">
+    <div ref="terminal" class="my-terminal" :style="termStyle" @click="showKeyboard = !showKeyboard"></div>
+
+    <div v-if="enableKeyboard" class="footer-keyboard" v-show="showKeyboard">
+      <keyboard @press="pressKeyboard"/>
+    </div>
+    <!-- TODO 端口转发面板  暂不支持 -->
+    <div v-if="false" class="port-forward">
+      <div v-if="portForwards.length > 0" class="port-forward-panel">
+        <div class="panel-header">
+          <span>端口转发</span>
+          <el-button size="small" type="primary" @click="showPortForwardDialog">添加</el-button>
+        </div>
+        <div v-for="pf in portForwards" :key="pf.id" class="forward-item">
+          <span>{{ pf.local_host }}:{{ pf.local_port }} -> {{ pf.remote_host }}:{{ pf.remote_port }}</span>
+          <el-button size="small" type="danger" @click="closePortForward(pf)">关闭</el-button>
+        </div>
+      </div>
+      <div v-else class="port-forward-empty">
+        <el-button size="small" @click="showPortForwardDialog" v-if="!closed">添加端口转发</el-button>
+      </div>
+
+      <!-- 端口转发对话框 -->
+      <el-dialog v-model="showPortForward" title="添加端口转发" width="400px">
+        <el-form :model="forwardConfig" label-width="80px">
+          <el-form-item label="本地端口">
+            <el-input-number v-model="forwardConfig.local_port" :min="1024" :max="65535" style="width: 100%"/>
+          </el-form-item>
+          <el-form-item label="远程主机">
+            <el-input v-model="forwardConfig.remote_host" placeholder="远程目标地址" />
+          </el-form-item>
+          <el-form-item label="远程端口">
+            <el-input-number v-model="forwardConfig.remote_port" :min="1" :max="65535" style="width: 100%"/>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="showPortForward = false">取消</el-button>
+          <el-button type="primary" @click="createPortForward">确定</el-button>
+        </template>
+      </el-dialog>
+    </div>
+  </div>
+</template>
+
+<script>
+import {Channel, invoke} from "@tauri-apps/api/core";
+import {Terminal} from "@xterm/xterm";
+import {FitAddon} from "@xterm/addon-fit";
+import {useTabsStore} from "@/store.js";
+import {ProgressAddon} from "@xterm/addon-progress";
+import {SearchAddon} from '@xterm/addon-search';
+import Keyboard from "@/mobile/keyboard.vue";
+import {isMobile} from "@/commons.js";
+const SCROLL_THRESHOLD = 6;  // 最小触发距离
+const SCROLL_SPEED = 12;     // 滚动速度（越小越快）
+
+export default {
+  name: "Terminal",
+  components: {Keyboard},
+  props: {
+    session: {
+      type: Object,
+      required: true
+    }
+  },
+  computed: {
+    sessionId(){
+      return this.session.sessionId;
+    }
+  },
+  data() {
+    const tabStore = useTabsStore();
+    return {
+      tabStore: tabStore,
+      closed: false,
+      term: null, termStyle: { bottom: 0, height: '100vh' },
+      showKeyboard: true, enableKeyboard: false,
+      // 端口转发相关
+      portForwards: [],
+      showPortForward: false,
+      forwardConfig: {
+        local_host: '127.0.0.1',
+        local_port: 0,
+        remote_host: '',
+        remote_port: 22,
+      }
+    }
+  },
+  watch: {
+    showKeyboard(){
+      this.updateTerminalSize()
+    }
+  },
+  mounted() {
+    if (isMobile()) { // 仅在移动端上启用虚拟键盘
+      this.enableKeyboard = true
+    }
+    this.connect().then(() => {
+      this.tabStore.connectSuccess(this.sessionId);
+      this.$bus.on("ssh_close_" + this.sessionId, () => {
+        this.disconnect();
+      });
+    }).catch(err => {
+      this.disconnect();
+      this.$notify({
+        type: 'warning',
+        message: '连接失败:' + err,
+      });
+    });
+  },
+  beforeUnmount() {
+    this.disconnect();
+  },
+  methods: {
+    disconnect() {
+      if (this.closed) return;
+      this.closed = true;
+      this.tabStore.connectClose(this.sessionId);
+      invoke("ssh_close", { sessionId: this.sessionId }).catch(() => {});
+      this.unbindTouchEvents()
+    },
+    async connect() {
+      // 生成配置信息
+      const connectConfig = Object.assign({}, this.session.config)
+      connectConfig.configId = this.session.configId
+      connectConfig.sessionId = this.session.sessionId
+      // 初始化 Terminal
+      this.term = new Terminal({
+        cursorBlink: true,
+        fontSize: 14,
+        allowTransparency: true,
+        fontFamily: 'monospace',
+        overviewRuler: {
+          width: 5,
+        },
+        // smoothScrollDuration: 50,
+        cursorStyle: 'bar',
+        cursorInactiveStyle: 'bar',
+        linkHandler: {
+          hover(event, text, range) {
+            console.log('linkHandler text :', text)
+          }
+        }
+      });
+      this.fitAddon = new FitAddon()
+      this.term.loadAddon(this.fitAddon)
+      // 进度条扩展
+      const progressAddon = new ProgressAddon();
+      this.term.loadAddon(progressAddon);
+      // 可以在缓冲区里检索，后面可以扩展用户支持
+      const searchAddon = new SearchAddon();
+      this.term.loadAddon(searchAddon);
+      this.term.open(this.$refs.terminal);
+      this.term.focus();
+      // 禁用输入后，这样可以直接使用内建的软键盘输入
+      this.term.textarea.readOnly = true
+      // 将event与Terminal建立连接，监听 SSH 事件
+      const onEvent = new Channel();
+      onEvent.onmessage = ({ event, data }) => {
+        switch (event) {
+          case "data":
+          case "extendedData":
+            this.term.write(data.data);
+            break;
+          case "eof":
+          case "close":
+            this.term.write("\r\n[connection closed]\r\n");
+            this.term.blur();
+            this.disconnect();
+            break;
+          case "exitStatus":
+            this.term.write(`\r\n[process exited with code ${data.exitStatus}]\r\n`);
+            break;
+          case "exitSignal":
+            this.term.write(`\r\n[terminated by signal ${data.signalName}]\r\n`);
+            break;
+          case "openFailure":
+            this.term.write(`\r\n[channel open failed, code=${data.code}]\r\n`);
+            break;
+          case "forwardSuccess":
+            // 端口转发成功
+            this.handleForwardSuccess(data);
+            break;
+          case "forwardClosed":
+            // 端口转发关闭
+            this.handleForwardClosed(data);
+            break;
+          default:
+            console.debug("ssh event:", event);
+        }
+      }
+      // 正式建立SSH连接
+      await invoke("ssh_connect", {
+        onEvent: onEvent,
+        sessionId: this.sessionId,
+        cols: 60,
+        rows: 40,
+        config: connectConfig
+      });
+      // Terminal 输入发送给 ssh
+      this.term.onData(data => {
+        if (this.closed) return;
+        invoke('ssh_run_command', {
+          sessionId: this.sessionId,
+          command: data
+        });
+      });
+
+      // 调整窗体大小
+      await this.$nextTick()
+      this.fitAddon.fit()
+      invoke('ssh_window_change', {
+        sessionId: this.sessionId,
+        colWidth: this.term.cols,
+        rowHeight: this.term.rows,
+      });
+      // Terminal resize 时通知 ssh
+      this.term.onResize((event) => {
+        invoke('ssh_window_change', {
+          sessionId: this.sessionId,
+          colWidth: event.cols,
+          rowHeight: event.rows,
+        });
+      });
+      // 监听 Tauri 窗口大小变化
+      window.addEventListener('resize', () => {
+        this.updateTerminalSize()
+      });
+      window.visualViewport.addEventListener('resize', () => {
+        this.updateTerminalSize()
+      });
+
+      this.updateTerminalSize()
+      // 处理触摸事件
+      this.bindTouchEvents()
+      // 加载现有端口转发
+      await this.loadPortForwards();
+    },
+
+    pressKeyboard(code) {
+      this.writeCode(code)
+      this.term.focus()
+    },
+    writeCode(code) {
+      invoke('ssh_run_command', {
+        sessionId: this.sessionId,
+        command: code
+      })
+    },
+
+    updateTerminalSize() {
+      if (!this.term || !this.fitAddon) return
+      const footerHeight = (this.showKeyboard && this.enableKeyboard ? 350 : 0);
+      // Terminal 距离底部
+      this.termStyle.bottom = footerHeight + 'px';
+      this.termStyle.height = footerHeight + 'px';
+      this.$nextTick(() => {
+        this.fitAddon.fit()
+      })
+    },
+
+    async loadPortForwards() {
+      try {
+        const forwards = await invoke('ssh_list_port_forwards', {
+          sessionId: this.sessionId
+        });
+        if (forwards && forwards.length > 0) {
+          this.portForwards = forwards.map((f, idx) => ({
+            id: 'pf_' + idx,
+            session_id: this.sessionId,
+            channel_id: f.channel_id,
+            local_host: f.local_host,
+            local_port: f.local_port,
+            remote_host: f.remote_host,
+            remote_port: f.remote_port,
+            state: 'active'
+          }));
+        }
+      } catch (e) {
+        console.warn('加载端口转发列表失败:', e);
+      }
+    },
+
+    handleForwardSuccess(data) {
+      const forward = {
+        id: 'pf_' + Math.random().toString(36).substring(2),
+        session_id: this.sessionId,
+        channel_id: data.channel_id,
+        local_host: data.local_host,
+        local_port: data.local_port,
+        remote_host: data.remote_host,
+        remote_port: data.remote_port,
+        state: 'active'
+      };
+      this.portForwards.push(forward);
+      this.tabStore.addPortForward(forward);
+      this.term.write(`\r\n[端口转发已启动: ${data.local_host}:${data.local_port} -> ${data.remote_host}:${data.remote_port}]\r\n`);
+    },
+
+    handleForwardClosed(data) {
+      const idx = this.portForwards.findIndex(f => f.channel_id === data.channel_id);
+      if (idx >= 0) {
+        const pf = this.portForwards[idx];
+        this.portForwards.splice(idx, 1);
+        this.tabStore.removePortForward(pf.id);
+        this.term.write(`\r\n[端口转发已关闭: ${pf.local_host}:${pf.local_port}]\r\n`);
+      }
+    },
+
+    showPortForwardDialog() {
+      this.forwardConfig.local_port = 0;
+      this.forwardConfig.remote_host = '';
+      this.forwardConfig.remote_port = 22;
+      this.showPortForward = true;
+    },
+
+    async createPortForward() {
+      if (!this.forwardConfig.remote_host) {
+        this.$message.warning('请输入远程主机地址');
+        return;
+      }
+      try {
+        await invoke('ssh_port_forward', {
+          sessionId: this.sessionId,
+          localHost: this.forwardConfig.local_host,
+          localPort: this.forwardConfig.local_port,
+          remoteHost: this.forwardConfig.remote_host,
+          remotePort: this.forwardConfig.remote_port,
+        });
+        this.showPortForward = false;
+        this.$message.success('端口转发创建成功');
+      } catch (e) {
+        this.$message.error('创建端口转发失败: ' + e);
+      }
+    },
+
+    async closePortForward(pf) {
+      try {
+        await invoke('ssh_close_port_forward', {
+          sessionId: this.sessionId,
+          channelId: pf.channel_id,
+        });
+      } catch (e) {
+        this.$message.error('关闭端口转发失败: ' + e);
+      }
+    },
+
+    /*触摸滚动支持*/
+    bindTouchEvents () {
+      const el = this.term.element
+      if (!el) return
+      el.addEventListener('touchstart', this.onTouchStart, { passive: true })
+      el.addEventListener('touchmove', this.onTouchMove, { passive: false })
+    },
+
+    unbindTouchEvents () {
+      const el = this.term && this.term.element
+      if (!el) return
+      el.removeEventListener('touchstart', this.onTouchStart)
+      el.removeEventListener('touchmove', this.onTouchMove)
+    },
+    onTouchStart (e) {
+      this.startY = e.touches[0].clientY
+      this.lastY = this.startY
+    },
+
+    onTouchMove (e) {
+      const currentY = e.touches[0].clientY
+      const deltaY = this.lastY - currentY
+
+      if (Math.abs(deltaY) > SCROLL_THRESHOLD) {
+        const lines = Math.floor(deltaY / SCROLL_SPEED)
+        if (lines !== 0) {
+          this.term.scrollLines(lines)
+          this.lastY = currentY
+          e.preventDefault() // 阻止页面滚动
+        }
+      }
+    },
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+.my-terminal {
+  flex: 1;
+  background: #000000;
+  ::v-deep(.xterm-decoration-overview-ruler) {
+    display: none !important;
+  }
+}
+
+.footer-keyboard {
+  height: 330px;
+  background: #222;
+  flex-shrink: 0;
+  transition: max-height 0.3s ease;
+  overflow: hidden;
+}
+.footer-keyboard.hide {
+  max-height: 0;
+  height: 0;
+  padding: 0;
+}
+
+.port-forward {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 20px;
+  display: none;
+  z-index: 10;
+}
+.port-forward-panel {
+  border-top: 1px solid #ddd;
+  padding: 8px;
+  background: #f5f5f5;
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .forward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: #fff;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+}
+
+.port-forward-empty {
+  border-top: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  background: #f5f5f5;
+}
+</style>
