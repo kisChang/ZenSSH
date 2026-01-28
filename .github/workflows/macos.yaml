@@ -63,6 +63,9 @@ jobs:
       - name: install frontend dependencies
         run: yarn install
 
+      - name: install icon
+        run: yarn icon
+
       - name: Tauri Project
         uses: tauri-apps/tauri-action@v0.6.1
         env:

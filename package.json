@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "icon": "tauri icon ./public/logo.png",
     "tauri_dev": "tauri dev",
     "and_dev": "tauri android dev"
   },
