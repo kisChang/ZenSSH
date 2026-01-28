@@ -1,7 +1,7 @@
 <template>
   <div class="container" v-loading="isLoading">
     <index-mobile v-if="isMobile"/>
-    <el-container v-else>
+    <el-container v-else-if="isPc">
       <el-header height="40px" class="header">
         <el-menu mode="horizontal"
                  class="app-menu"
@@ -51,7 +51,6 @@
 </template>
 
 <script>
-import { h } from 'vue'
 import {check} from '@tauri-apps/plugin-updater';
 import {openUrl} from '@tauri-apps/plugin-opener'
 import {listen} from '@tauri-apps/api/event'
@@ -71,19 +70,12 @@ export default {
 
       asideSize: 200,
       activeMenu: "",
-      isMobile: false,
+      isMobile: false, isPc: false,
 
       showUpdater: false, update: null,
     }
   },
   async mounted() {
-    if (isMobile()) {
-      this.isMobile = true
-      this.asideSize = 0;
-      this.$forceUpdate();
-    } else {
-      this.handleCheckUpdate();
-    }
     // 加载密钥串
     while (true) {
       let syncPass = await appRunState().keyringGet()
@@ -107,6 +99,16 @@ export default {
         break;
       }
     }
+
+    // 检查设备类型
+    if (isMobile()) {
+      this.isMobile = true
+      this.asideSize = 0;
+    } else {
+      this.isPc = true;
+      this.handleCheckUpdate();
+    }
+    await this.$nextTick();
 
     // Rust 后端 全局事件监听
     listen("ssh_close", event => {

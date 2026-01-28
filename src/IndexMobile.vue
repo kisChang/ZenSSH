@@ -89,11 +89,9 @@ export default {
     // 检查电池优化选项
     checkBatteryOptimizationStatus().then(status => {
       if (status.isOptimized) {
-        requestBatteryOptimizationExemption().then(res => {
-          console.log('request ok:', res)
-        }).catch(err => {
-          console.log('request fail:', err)
-        })
+        this.$confirm("由于Android 系统限制，如果未禁用电池优化不允许后台运行，则SSH连接无法在后台保持，请允许应用在后台运行。", {showClose: false}).then(() => {
+          requestBatteryOptimizationExemption().catch(err => {})
+        }).catch(() => {})
       }
     })
 
