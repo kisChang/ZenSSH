@@ -5,9 +5,15 @@ ZenSSH
   <img src="public/logo.png" alt="Logo" width="200px"/>
 </p>
 
+<p align="center">
+<a href="README_cn.md">中文</a> | 
+<a href="README.md">English</a>
+</p>
+
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/win32.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/win.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml)
+[![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml)
 [![License](https://img.shields.io/github/license/kischang/ZenSSH)](LICENSE)
 
 ZenSSH 是一款基于 Tauri 构建的全平台 SSH 客户端，支持 SSH 连接与 SFTP 文件传输，支持跳板机，专注于提供简洁、稳定、易用的核心功能体验。

@@ -5,9 +5,15 @@ ZenSSH
   <img src="public/logo.png" alt="Logo" width="200px"/>
 </p>
 
+<p align="center">
+<a href="README_cn.md">中文</a> | 
+<a href="README.md">English</a>
+</p>
+
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/win32.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/win.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml)
+[![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml)
 [![License](https://img.shields.io/github/license/kischang/ZenSSH)](LICENSE)
 
 ZenSSH is a cross-platform SSH client built with Tauri, supporting SSH connections and SFTP file transfers. It also supports jump servers, focusing on providing a **simple, stable, and user-friendly core experience**.

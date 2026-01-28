@@ -1,0 +1,120 @@
+name: Linux
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            mobile: 'android'
+            args: ' --apk true --target aarch64 '
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install Rust stable (android)
+        if: matrix.mobile == 'android'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Set up JDK
+        if: matrix.mobile == 'android'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        if: matrix.mobile == 'android'
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        if: matrix.mobile == 'android'
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+          link-to-sdk: true
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          workspaces: |
+            ./src-tauri -> ./target
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-24.04' || matrix.platform == 'ubuntu-24.04-arm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev libxdo-dev libssl-dev  libayatana-appindicator3-dev   librsvg2-dev
+
+      - name: init mobile project
+        if: matrix.mobile != ''
+        run: |
+          npx @tauri-apps/cli ${{ matrix.mobile }} init
+
+      - name: install frontend dependencies
+        run: yarn install
+
+      - name: install icon
+        run: yarn icon
+
+      - name: Tauri Project
+        uses: tauri-apps/tauri-action@dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Rev ${{ github.ref_name }}"
+          releaseBody: "Draft release, will be updated later."
+          releaseDraft: true
+          args: ${{ matrix.args }}
+          retryAttempts: 1
+          uploadPlainBinary: true
+          uploadWorkflowArtifacts: true
+          uploadUpdaterSignatures: true
+          mobile: ${{ matrix.mobile }}
+
+      - name: Extract android signing key from env
+        if: matrix.mobile == 'android'
+        run: |
+          echo "${{ secrets.ANDROID_KEY_BASE64 }}" > src-tauri/gen/android/release.jks.base64
+          base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
+
+      - name: setup Android signing
+        if: matrix.mobile == 'android'
+        run: |
+          ls ${{ env.ANDROID_HOME }}/build-tools
+          ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign \
+          --ks src-tauri/gen/android/release.decrypted.jks \
+          --ks-key-alias ${{ secrets.ANDROID_KEY_ALIAS }} \
+          --key-pass pass:${{ secrets.ANDROID_KEY_PASSWORD }} \
+          --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
+          src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+
+      - name: Upload APP
+        if: matrix.mobile == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk

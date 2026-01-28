@@ -15,9 +15,6 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
-          - platform: 'ubuntu-22.04'
-            mobile: 'android'
-            args: ' --apk true --target aarch64 '
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -32,35 +29,9 @@ jobs:
           node-version: lts/*
 
       - name: install Rust stable (desktop)
-        if: matrix.mobile == ''
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
-
-      - name: install Rust stable (android)
-        if: matrix.mobile == 'android'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-
-      - name: Set up JDK
-        if: matrix.mobile == 'android'
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Android SDK
-        if: matrix.mobile == 'android'
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Android NDK
-        if: matrix.mobile == 'android'
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r29
-          link-to-sdk: true
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -73,11 +44,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev libxdo-dev libssl-dev  libayatana-appindicator3-dev   librsvg2-dev
-
-      - name: init mobile project
-        if: matrix.mobile != ''
-        run: |
-          npx @tauri-apps/cli ${{ matrix.mobile }} init
 
       - name: install frontend dependencies
         run: yarn install
@@ -102,27 +68,3 @@ jobs:
           uploadPlainBinary: true
           uploadWorkflowArtifacts: true
           uploadUpdaterSignatures: true
-          mobile: ${{ matrix.mobile }}
-
-      - name: Extract android signing key from env
-        if: matrix.mobile == 'android'
-        run: |
-          echo "${{ secrets.ANDROID_KEY_BASE64 }}" > src-tauri/gen/android/release.jks.base64
-          base64 -d src-tauri/gen/android/release.jks.base64 > src-tauri/gen/android/release.decrypted.jks
-
-      - name: setup Android signing
-        if: matrix.mobile == 'android'
-        run: |
-          ls ${{ env.ANDROID_HOME }}/build-tools
-          ${{ env.ANDROID_HOME }}/build-tools/34.0.0/apksigner sign \
-          --ks src-tauri/gen/android/release.decrypted.jks \
-          --ks-key-alias ${{ secrets.ANDROID_KEY_ALIAS }} \
-          --key-pass pass:${{ secrets.ANDROID_KEY_PASSWORD }} \
-          --out src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk \
-          src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
-
-      - name: Upload APP
-        if: matrix.mobile == 'android'
-        uses: actions/upload-artifact@v4
-        with:
-          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-signed.apk
