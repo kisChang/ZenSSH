@@ -41,14 +41,14 @@
           <span v-else>从未同步</span>
         </div>
         <div style="display: block;margin-left: 20px;">
-          <el-button size="default" type="primary" @click="syncConfig">立即同步</el-button>
+          <el-button :loading="syncConfigLoading" size="default" type="primary" @click="syncConfig">立即同步</el-button>
           <el-button size="default" type="primary" @click="resetKeyring">重置密钥</el-button>
         </div>
       </el-form-item>
     </template>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
-      <div class="btn" @click="handleSave">保存并重载应用</div>
+      <div class="btn" @click="handleSave">保存配置</div>
     </div>
   </el-form>
 </template>
@@ -70,7 +70,7 @@ export default {
           { required: true, message: '请输入授权码', trigger: 'blur' },
         ],
       },
-
+      syncConfigLoading: false,
       isMobile: false,
     }
   },
@@ -84,7 +84,7 @@ export default {
         if (valid) {
           this.$confirm("确定保存配置并重载（以应用新配置）？", {showClose: false}).then(() => {
             this.save(() => {
-              relaunch()
+              this.$message({message: "保存成功", type: "success"})
             })
           }).catch(() => {})
         }
@@ -112,9 +112,10 @@ export default {
     },
     async syncConfig() {
       this.save()
-      if (this.setting.syncType == 0) {
+      if (this.setting.syncType === 0) {
         return;
       }
+      this.syncConfigLoading = true
       if (this.setting.gistsFileId) {
         // 先尝试加载最后配置
         try {
@@ -129,6 +130,8 @@ export default {
         this.settingForm = Object.assign({}, this.setting.$state)
       }).catch(err => {
         this.$message({message: err, type: "error"})
+      }).finally(() => {
+        this.syncConfigLoading = false
       })
     },
   }
