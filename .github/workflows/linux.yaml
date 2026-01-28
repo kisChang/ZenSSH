@@ -87,7 +87,7 @@ jobs:
         run: yarn icon
 
       - name: Tauri Project
-        uses: tauri-apps/tauri-action@v0.6.1
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
@@ -100,9 +100,9 @@ jobs:
           releaseDraft: true
           args: ${{ matrix.args }}
           retryAttempts: 1
-          uploadPlainBinary: ${{ matrix.mobile == '' }}
-          uploadWorkflowArtifacts: ${{ matrix.mobile == '' }}
-          uploadUpdaterSignatures: ${{ matrix.mobile == '' }}
+          uploadPlainBinary: true
+          uploadWorkflowArtifacts: true
+          uploadUpdaterSignatures: true
           tauriScript: ${{ matrix.tauri || 'yarn tauri' }}
           mobile: ${{ matrix.mobile }}
 
