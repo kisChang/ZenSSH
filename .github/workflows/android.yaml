@@ -89,7 +89,7 @@ jobs:
       - name: setup Android signing build (override)
         if: matrix.mobile == 'android'
         run: |
-          mv build/build.gradle.kts /src-tauri/gen/android/app/build.gradle.kts
+          mv build/build.gradle.kts src-tauri/gen/android/app/build.gradle.kts
 
       - name: Tauri Project
         uses: tauri-apps/tauri-action@dev
