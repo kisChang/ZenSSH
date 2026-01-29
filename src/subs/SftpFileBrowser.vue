@@ -100,7 +100,7 @@ export default {
       });
     }).catch(err => {
       this.disconnect();
-      this.$notify({
+      this.notify({
         type: 'warning',
         message: '连接失败:' + err,
       });
@@ -180,7 +180,7 @@ export default {
         }
         if (event === 'process') this.downloadProgress = data.val;
         if (event === 'cancelled') {
-          this.$message({message: "下载已取消", type: "success"})
+          this.notify({message: "下载已取消", type: "success"})
         }
       };
       invoke('ssh_sftp_read', {

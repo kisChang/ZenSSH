@@ -119,7 +119,7 @@ export default {
     dropdownRemove() {
       this.$confirm("确定删除此配置？", {showClose: false}).then(() => {
         this.appMng.removeConfig(this.triggerConfig.configId)
-        this.$notify({
+        this.notify({
           type: 'success',
           message: '已删除配置',
         })

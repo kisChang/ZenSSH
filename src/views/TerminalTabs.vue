@@ -158,7 +158,7 @@ export default {
           this.closeTerminal(sessionId).then(() => {
             this.tabStore.connectRemove(sessionId)
           })
-          this.$notify({
+          this.notify({
             type: 'success',
             message: '已关闭',
           })

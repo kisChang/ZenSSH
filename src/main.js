@@ -28,6 +28,24 @@ import mitt from 'mitt'
 const $bus = mitt()
 app.config.globalProperties.$bus = $bus
 
+import {notify} from "@/commons.js";
+app.config.globalProperties.notify = notify
+app.config.globalProperties.notify.error = (msg) => {
+    notify({type: "error", message: msg})
+}
+app.config.globalProperties.notify.primary = (msg) => {
+    notify({type: "primary", message: msg})
+}
+app.config.globalProperties.notify.success = (msg) => {
+    notify({type: "success", message: msg})
+}
+app.config.globalProperties.notify.warning = (msg) => {
+    notify({type: "warning", message: msg})
+}
+app.config.globalProperties.notify.info = (msg) => {
+    notify({type: "info", message: msg})
+}
+
 import client from "./request.js"
 app.config.globalProperties.$axios = client
 

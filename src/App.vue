@@ -90,7 +90,7 @@ export default {
               dangerouslyUseHTMLString: true,
             });
         if (!setPass.value) {
-          this.$notify({message: "务必设置密钥才可以使用本程序！", type: "warning", zIndex: 19999});
+          this.notify({message: "务必设置密钥才可以使用本程序！", type: "warning", zIndex: 19999});
           continue;
         }
         await appRunState().keyringSet(setPass.value)
@@ -119,11 +119,11 @@ export default {
     this.isLoading = true
     appConfigStore().loadByCloud().then(res => {
       if (res) {
-        this.$message({message: "加载云端数据成功", type: "success"})
+        this.notify({message: "加载云端数据成功", type: "success"})
         this.$forceUpdate()
       }
     }).catch(err => {
-      this.$message({message: "配置同步失败：" + err, type: "error"})
+      this.notify({message: "配置同步失败：" + err, type: "error"})
     }).finally(() => {
       // 推送一次配置信息到后端
       useMngStore().syncConfig();
@@ -142,11 +142,11 @@ export default {
           this.showUpdater = true
         } else {
           if (byUser) {
-            this.$message.success('暂无更新，开发者正在噼里啪啦中...');
+            this.notify({type: 'success', message: '暂无更新，开发者正在噼里啪啦中...'});
           }
         }
       }).catch(err => {
-        this.$message.primary('暂无更新，因为开发者弄坏了更新服务器:' + err);
+        this.notify({type: 'primary', message: '暂无更新，因为开发者弄坏了更新服务器:' + err});
       })
     },
     async handleAppUpdate() {
@@ -237,6 +237,14 @@ export default {
       letter-spacing: 2px;
       font-size: 1rem;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .el-notification {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
   }
 }
 </style>

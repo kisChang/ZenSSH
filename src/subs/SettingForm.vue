@@ -84,7 +84,7 @@ export default {
         if (valid) {
           this.$confirm("确定保存配置并重载（以应用新配置）？", {showClose: false}).then(() => {
             this.save(() => {
-              this.$message({message: "保存成功", type: "success"})
+              this.notify({message: "保存成功", type: "success"})
             })
           }).catch(() => {})
         }
@@ -126,10 +126,10 @@ export default {
       }
       let confJson = JSON.stringify(useMngStore().$state)
       this.setting.syncToCloud(confJson).then(() => {
-        this.$message({message: "同步成功", type: "success"})
+        this.notify({message: "同步成功", type: "success"})
         this.settingForm = Object.assign({}, this.setting.$state)
       }).catch(err => {
-        this.$message({message: err, type: "error"})
+        this.notify({message: err, type: "error"})
       }).finally(() => {
         this.syncConfigLoading = false
       })
