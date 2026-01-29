@@ -103,7 +103,7 @@ export default {
       });
     }).catch(err => {
       this.disconnect();
-      this.notify({
+      this.$notify({
         type: 'warning',
         message: '连接失败:' + err,
       });
@@ -317,7 +317,7 @@ export default {
 
     async createPortForward() {
       if (!this.forwardConfig.remote_host) {
-        this.notify.warning('请输入远程主机地址');
+        this.$message.warning('请输入远程主机地址');
         return;
       }
       try {
@@ -329,9 +329,9 @@ export default {
           remotePort: this.forwardConfig.remote_port,
         });
         this.showPortForward = false;
-        this.notify.success('端口转发创建成功');
+        this.$message.success('端口转发创建成功');
       } catch (e) {
-        this.notify.error('创建端口转发失败: ' + e);
+        this.$message.error('创建端口转发失败: ' + e);
       }
     },
 
@@ -342,7 +342,7 @@ export default {
           channelId: pf.channel_id,
         });
       } catch (e) {
-        this.notify.error('关闭端口转发失败: ' + e);
+        this.$message.error('关闭端口转发失败: ' + e);
       }
     },
 

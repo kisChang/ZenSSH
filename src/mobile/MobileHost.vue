@@ -16,8 +16,11 @@
       </div>
     </div>
     <div v-else-if="configList.length" style="text-align: center;">
-      <img class="app-icon" src="/logo.png" style="margin-top: 0;"/>
-      <div class="config-list">
+      <img class="app-icon" src="/logo.png"/>
+      <div style="font-size: 0.9rem;padding: 10px 20px;">
+        Connect via SSH, or directly connect to your device using FTP to access the file system.
+      </div>
+      <el-scrollbar class="config-list">
         <div v-for="once of configList"
              class="config-item"
              @click="handleClickConfig(once)"
@@ -25,7 +28,7 @@
           <div class="title">{{ once.name }}</div>
           <div class="subtitle">{{ once.username }}@{{ once.host }}</div>
         </div>
-      </div>
+      </el-scrollbar>
     </div>
     <div v-else style="text-align: center;">
       <img class="app-icon" src="/logo.png" />
@@ -138,6 +141,8 @@ $green: #22c55e;
 
   .config-list {
     padding: 0 10px;
+    height: calc(100vh - 250px);
+    user-select: none;
     .config-item:first-child {
       border-top: 1px solid #aeaeae;
     }
@@ -163,9 +168,8 @@ $green: #22c55e;
 
 /* Icon */
 .app-icon {
-  margin-top: 15vh;
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
 }
 
 .discover {

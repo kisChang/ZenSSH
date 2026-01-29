@@ -196,17 +196,18 @@ export default {
       this.activeKey = key;
 
       if (key === '⌫') {
-        this.backspace();
-        return;
+        // 处理删除功能
+        key = '\b';
       }
       this.press(key);
 
       //这几个不触发repeat
       if (key === 'Shift' || key === 'SHIFT' ||key === 'Ctrl') return;
+
       this.repeatDelayTimer = setTimeout(() => {
         this.repeatTimer = setInterval(() => {
           this.onDown(key);
-        }, 40);
+        }, 500);
       }, 300);
     },
 
@@ -244,7 +245,10 @@ export default {
       this.$emit("press", key);
 
       if (this.shift && !this.keepShift) {
-        this.shift = this.keepShift = false;
+        this.shift = this.keepShift = false
+      }
+      if (this.ctrl) {
+        this.ctrl = false
       }
     },
 
@@ -262,20 +266,11 @@ export default {
         this.shift = true;
       }
     },
-
     toggleSymbol() {
       this.mode = this.mode === 'symbol' ? 'letter' : 'symbol';
       this.shift = false;
       this.keepShift = false;
     },
-
-    backspace() {
-      if (this.setting.vibrate > 0) {
-        // 体验不好
-        vibrate(this.setting.vibrate).catch(() => {});
-      }
-      this.$emit("press", '\b');
-    }
   }
 };
 </script>

@@ -1,6 +1,7 @@
 import {type} from '@tauri-apps/plugin-os';
 import { ElNotification } from 'element-plus'
 
+const _isMobile = isMobile()
 export function notify(options) {
     ElNotification({
         title: options.title,
@@ -9,6 +10,7 @@ export function notify(options) {
         zIndex: options.zIndex | 0,
         offset: 30,
         duration: options.duration | 4500,
+        showClose: !_isMobile
     })
 }
 

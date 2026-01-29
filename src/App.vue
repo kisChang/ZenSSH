@@ -209,6 +209,11 @@ export default {
 </script>
 
 <style lang="scss">
+body {
+  height: 100vh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
 .el-drawer {
   height: auto !important;
   user-select: none;
@@ -253,8 +258,9 @@ export default {
 .container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - env(safe-area-inset-top));
+  height: 100vh;
   padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
   .header {
     height: 30px;
     padding: 0;

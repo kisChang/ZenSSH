@@ -11,22 +11,23 @@
     </div>
 
     <!-- 文件列表 -->
-    <ul class="file-list">
-      <li
-          v-for="item in sortedFiles"
-          :key="item.filename"
-          class="file-item"
-          @click="open(item)"
-      >
+    <el-scrollbar class="file-list">
+      <ul>
+        <li
+            v-for="item in sortedFiles"
+            :key="item.filename"
+            class="file-item"
+            @click="open(item)"
+        >
       <span class="icon">
         {{ item.is_dir ? '📁' : '📄' }}
       </span>
-        <span class="name">{{ item.filename }}</span>
+          <span class="name">{{ item.filename }}</span>
 
-        <span v-if="!item.is_dir" class="more">⋯</span>
-      </li>
-    </ul>
-
+          <span v-if="!item.is_dir" class="more">⋯</span>
+        </li>
+      </ul>
+    </el-scrollbar>
 
     <el-drawer :model-value="activeFile != null" direction="btt" :with-header="false" size="25%" body-class="pop-drawer" @close="activeFile = null">
       <template #default>
@@ -313,9 +314,12 @@ export default {
 
 /* 列表 */
 .file-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  height: calc(100vh - 150px);
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 .file-item {
