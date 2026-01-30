@@ -15,7 +15,7 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             mobile: 'android'
-            args: ' --apk true --target aarch64 '
+            args: ' --apk true '
 
     runs-on: ${{ matrix.platform }}
     steps:
