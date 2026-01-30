@@ -76,6 +76,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "${{ github.ref_name }}"
+          releaseAssetNamePattern: '[name]_[version]_[platform]_[arch]_[setup].[ext]'
           args: ${{ matrix.args }}
           retryAttempts: 1
           uploadPlainBinary: true
