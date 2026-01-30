@@ -1,0 +1,11 @@
+{
+  "common": {
+    "hello": "Connect via SSH, or directly connect to your device using FTP to access the file system.",
+    "lang": "Language"
+  },
+  "app": {
+    "host": "Host",
+    "conn": "Connecting",
+    "setting": "Settings"
+  }
+}

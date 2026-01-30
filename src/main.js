@@ -2,14 +2,24 @@ import { createApp } from "vue";
 import App from "./App.vue";
 
 const app = createApp(App);
+import { createI18n } from 'vue-i18n'
+import en from '@/locales/en.json'
+import zh from '@/locales/zh.json'
+
+const i18n = createI18n({
+    locale: 'zhCn',
+    fallbackLocale: 'en',
+    messages: {
+        en: en,
+        zhCn: zh
+    }
+})
+app.use(i18n)
 
 import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
-app.use(ElementPlus, {
-    locale: zhCn
-})
+app.use(ElementPlus)
 
 // 注册icon
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -47,6 +57,7 @@ app.config.globalProperties.notify.info = (msg) => {
 }
 
 import client from "./request.js"
+import {appConfigStore} from "@/store.js";
 app.config.globalProperties.$axios = client
 
 app.mount("#app");

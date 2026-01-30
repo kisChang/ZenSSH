@@ -65,6 +65,9 @@ export const appRunState = defineStore('AppRunningState', {
 export const appConfigStore = defineStore('AppConf', {
     persist: true,
     state: () => ({
+        // 国际化
+        locale: "zh",
+
         // 同步云
         syncType: 0,
         gistsAccessToken: null,
@@ -81,6 +84,7 @@ export const appConfigStore = defineStore('AppConf', {
             this.gistsFileId = setting.gistsFileId
             this.gistsLastSync = setting.gistsLastSync
             this.virtualKeyboardVibrate = setting.virtualKeyboardVibrate
+            this.locale = setting.locale
         },
         async syncToCloud(content) {
             const that = this;

@@ -20,15 +20,15 @@
     <footer class="tabbar" v-if="!titleHidden">
       <div class="tab" @click="toggleTab('host')" :class="{active : activeTab === 'host'}">
         <el-icon :size="20"><Platform /></el-icon>
-        <span>主机</span>
+        <span>{{ $t('app.host') }}</span>
       </div>
       <div class="tab" @click="toggleTab('conn')" :class="{active : activeTab === 'conn'}">
         <el-icon :size="20"><Connection /></el-icon>
-        <span>连接</span>
+        <span>{{ $t('app.conn') }}</span>
       </div>
       <div class="tab" @click="toggleTab('setting')" :class="{active : activeTab === 'setting'}">
         <el-icon :size="20"><SetUp /></el-icon>
-        <span>设置</span>
+        <span>{{ $t('app.setting') }}</span>
       </div>
     </footer>
   </div>
@@ -55,7 +55,8 @@ export default {
     const tabsStore = useTabsStore();
     return {
       activeTab: 'host',
-      title: '', titleHidden: false,
+      title: '',
+      titleHidden: false,
       tabsStore: tabsStore,
     }
   },
@@ -120,12 +121,12 @@ export default {
   methods: {
     toggleTab: function (to) {
       const titleMap = {
-        'host': "主机",
-        'conn': "连接",
-        'setting': "设置",
+        'host': "app.host",
+        'conn': "app.conn",
+        'setting': "app.setting",
       }
       this.activeTab = to
-      this.title = titleMap[to]
+      this.title = this.$t(titleMap[to])
       this.titleHidden = false
       if (to === 'conn') {
         // 有连接时隐藏全部信息

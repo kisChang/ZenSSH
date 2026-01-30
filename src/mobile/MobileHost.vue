@@ -18,7 +18,7 @@
     <div v-else-if="configList.length" style="text-align: center;">
       <img class="app-icon" src="/logo.png"/>
       <div style="font-size: 0.9rem;padding: 10px 20px;">
-        Connect via SSH, or directly connect to your device using FTP to access the file system.
+        {{  $t('common.hello') }}
       </div>
       <el-scrollbar class="config-list">
         <div v-for="once of configList"

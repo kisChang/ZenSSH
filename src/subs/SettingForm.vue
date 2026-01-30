@@ -49,6 +49,12 @@
     <el-form-item label="加密密钥">
       <el-button size="default" type="primary" @click="resetKeyring">重置</el-button>
     </el-form-item>
+    <el-form-item :label="$t('common.lang')">
+      <el-select v-model="settingForm.locale">
+        <el-option label="简体中文" value="zhCn"></el-option>
+        <el-option label="English" value="en"></el-option>
+      </el-select>
+    </el-form-item>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
       <div class="btn" @click="handleSave">保存配置</div>
@@ -86,6 +92,7 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           this.save(() => {
+            this.$bus.emit("change-i18n")
             this.notify({message: "保存成功", type: "success"})
           })
         }

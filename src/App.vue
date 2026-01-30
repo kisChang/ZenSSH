@@ -1,5 +1,6 @@
 <template>
   <div class="container" v-loading="isLoading">
+  <el-config-provider :locale="locale">
     <index-mobile v-if="isMobile"/>
     <el-container v-else-if="isPc">
       <el-header height="40px" class="header">
@@ -47,6 +48,7 @@
         </el-splitter-panel>
       </el-splitter>
     </el-container>
+  </el-config-provider>
   </div>
 </template>
 
@@ -60,13 +62,15 @@ import TerminalTabs from "./views/TerminalTabs.vue";
 import {appConfigStore, appRunState, useMngStore, useTabsStore} from "@/store.js";
 import IndexMobile from "@/IndexMobile.vue";
 import {isMobile} from "@/commons.js";
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import en from 'element-plus/es/locale/lang/en'
 
 export default {
   name: "Tauri",
   components: {IndexMobile, TerminalTabs, ConnectManage},
   data() {
     return {
-      isLoading: true,
+      isLoading: true, locale: zhCn,
 
       asideSize: 200,
       activeMenu: "",
@@ -100,6 +104,12 @@ export default {
       }
     }
 
+    // 国际化初始化
+    this.loadI18n()
+    this.$bus.on('change-i18n', () => {
+      this.loadI18n()
+    })
+
     // 检查设备类型
     if (isMobile()) {
       this.isMobile = true
@@ -126,6 +136,10 @@ export default {
     })
   },
   methods: {
+    loadI18n() {
+      this.$i18n.locale = appConfigStore().locale
+      this.locale = this.$i18n.locale === "zhCn" ? zhCn : en
+    },
     async initAppData() {
       // 加载云端同步数据
       this.isLoading = true
@@ -202,7 +216,7 @@ export default {
       exit(0).then()
     },
     showAbout(){
-      openUrl("https://kischang.top").then()
+      openUrl("https://blog.kischang.top").then()
     },
   }
 }
