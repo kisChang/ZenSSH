@@ -10,10 +10,10 @@ ZenSSH
 <a href="README.md">English</a>
 </p>
 
-[![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/win32.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/win.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/linux.yaml)
 [![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/android.yaml)
+[![Build Status](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml/badge.svg)](https://github.com/kischang/ZenSSH/actions/workflows/macos.yaml)
 [![License](https://img.shields.io/github/license/kischang/ZenSSH)](LICENSE)
 
 ZenSSH is a cross-platform SSH client built with Tauri, supporting SSH connections and SFTP file transfers. It also supports jump servers, focusing on providing a **simple, stable, and user-friendly core experience**.
@@ -27,6 +27,9 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [x] SSH / SFTP / Jump Server
 * [x] Gist Sync for configuration
 * [x] Auto-update (Only PC)
+* [ ] Text file preview and editing
+* [ ] Shell-specific keyboard with keyboard vibration
+* [ ] Auto Complete
 
 ## IDE Setup
 
