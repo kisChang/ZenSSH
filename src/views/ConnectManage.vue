@@ -16,6 +16,9 @@
     <el-dialog
         v-model="showConnect"
         :title="configAdd ? '创建连接' : '编辑连接'"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        top="5vh"
         modal-class="app-dialog">
       <connect-form v-model="config" />
       <template #footer>

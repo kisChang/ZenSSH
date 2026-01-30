@@ -7,7 +7,7 @@
       <el-input v-model="config.host" placeholder="主机地址" />
     </el-form-item>
     <el-form-item label="端口">
-      <el-input-number v-model="config.port" :min="1" :max="65535" placeholder="22" style="width: 100%"/>
+      <el-input-number v-model="config.port" :min="1" :max="65535" placeholder="SSH端口（默认22）" style="min-width: 15rem;"/>
     </el-form-item>
     <el-form-item label="用户名">
       <el-input v-model="config.username" placeholder="用户名" />
@@ -41,7 +41,7 @@
           v-model="config.privateKeyData"
           type="textarea"
           :rows="3"
-          placeholder="直接粘贴私钥内容（优先级高于路径）"
+          placeholder="直接粘贴私钥内容（推荐，优先级高于路径，且可同步）"
         />
       </el-form-item>
       <el-form-item label="密钥密码">
@@ -54,9 +54,12 @@
       </el-form-item>
     </template>
 
-    <el-form-item label="代理会话">
-      <el-select v-model="config.bastionConfigId" placeholder="选择代理会话" style="width: 100%">
-        <el-option :value="''" label="None">None</el-option>
+    <el-form-item label="跳板会话">
+      <el-select v-model="config.bastionConfigId"
+                 :value-on-clear="''"
+                 placeholder="请选择跳板会话（可选）"
+                 clearable
+                 style="width: 100%">
         <el-option
             v-for="sess in filterBastionSessions"
             :key="sess.configId"

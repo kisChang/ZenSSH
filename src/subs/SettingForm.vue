@@ -42,10 +42,12 @@
         </div>
         <div style="display: block;margin-left: 20px;">
           <el-button :loading="syncConfigLoading" size="default" type="primary" @click="syncConfig">立即同步</el-button>
-          <el-button size="default" type="primary" @click="resetKeyring">重置密钥</el-button>
         </div>
       </el-form-item>
     </template>
+    <el-form-item label="同步密钥">
+      <el-button size="default" type="primary" @click="resetKeyring">重置</el-button>
+    </el-form-item>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
       <div class="btn" @click="handleSave">保存配置</div>
