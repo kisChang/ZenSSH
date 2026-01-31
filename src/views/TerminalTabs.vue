@@ -197,7 +197,7 @@ export default {
   height: calc(100vh - 100px);
 }
 .terminal-tabs {
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 30px);
   background: #222;
   :deep(.el-tabs__item.is-active) {
     padding-left: 10px !important;
@@ -218,6 +218,11 @@ export default {
 
   .setting-tab {
     padding: 20px;
+  }
+}
+@media (max-width: 768px) {
+  .terminal-tabs {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 </style>

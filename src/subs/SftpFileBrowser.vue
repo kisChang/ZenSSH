@@ -7,6 +7,7 @@
         <button @click="bakHostTab">🏡 Host</button>
         <button @click="goUp">🔼 Back</button>
         <button @click="mkdir">📁 mkdir</button>
+        <button @click="upload">📤 upload</button>
       </div>
     </div>
 
@@ -64,11 +65,11 @@
 </template>
 
 <script>
-import {save} from '@tauri-apps/plugin-dialog';
-import {writeFile, exists, create} from '@tauri-apps/plugin-fs';
+import {open, save} from '@tauri-apps/plugin-dialog';
+import {writeFile, exists, create, readFile} from '@tauri-apps/plugin-fs';
 import {Channel, invoke} from '@tauri-apps/api/core'
 import {useTabsStore} from "@/store.js";
-import {genId} from "@/commons.js";
+import {genId, sep} from "@/commons.js";
 
 export default {
   props: {
@@ -189,7 +190,7 @@ export default {
       onDownEvent.onmessage = async ({ event, data }) => {
         if (event === 'chunk') {
           // 逐步追加文件
-          await writeFile(savePath, data.data, {
+          await writeFile(savePath, Uint8Array.from(data.data), {
             append: true,
           });
         }
@@ -225,6 +226,7 @@ export default {
           file: this.activeFile,
         }).then(_ => {
           this.activeFile = null
+          this.loadDir().catch()
         }).finally(() => {
           loading.close()
         })
@@ -241,6 +243,24 @@ export default {
         dir: this.currentDir + '/' + name,
       })
       await this.loadDir()
+    },
+
+    async upload() {
+      const filePath = await open({title: "Choose File Upload", multiple: false, directory: false})
+      const loading = this.$loading({text: "Uploading..."})
+      const fileName = filePath.substring(filePath.lastIndexOf(sep) + 1)
+      const fileContent = await readFile(filePath);
+      invoke('ssh_sftp_write', {
+        sessionId: this.sessionId,
+        filePath: this.currentDir + '/' + fileName,
+        data: fileContent
+      }).then(() => {
+        this.loadDir().catch()
+      }).catch(err=> {
+        this.notify.error('Fail:' + err)
+      }).finally(()=> {
+        loading.close()
+      })
     },
 
     async remove(item) {

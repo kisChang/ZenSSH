@@ -1,5 +1,5 @@
-import {type} from '@tauri-apps/plugin-os';
-import { ElNotification } from 'element-plus'
+import {type, platform} from '@tauri-apps/plugin-os';
+import {ElNotification} from 'element-plus'
 
 const _isMobile = isMobile()
 export function notify(options) {
@@ -26,6 +26,8 @@ export function isMobile() {
     }
     return false;
 }
+
+export const sep = (await platform()) === "windows" ? "\\" : "/";
 
 // 系统常量
 export const CONSTANT = {
