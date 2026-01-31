@@ -31,6 +31,27 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [ ] Shell-specific keyboard with keyboard vibration
 * [ ] Auto Complete
 
+## Screenshot (Android)
+
+<table>
+<tr>
+<td><img src="screenshot/mobile_1.png"></td>
+<td><img src="screenshot/mobile_2.png"></td>
+<td><img src="screenshot/mobile_3.png"></td>
+</tr>
+</table>
+
+## Screenshot (PC)
+
+<table>
+
+<tr>
+<td><img src="screenshot/pc_1.png"></td>
+<td><img src="screenshot/pc_2.png"></td>
+<td><img src="screenshot/pc_3.png"></td>
+</tr>
+</table>
+
 ## IDE Setup
 
 * [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
