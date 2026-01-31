@@ -99,7 +99,7 @@ export const appConfigStore = defineStore('AppConf', {
 
             //2. 生成存储数据
             let files = {
-                'SyncCloud_kissh.json': {
+                'SyncCloud.json': {
                     content: JSON.stringify({
                         content: contentEncrypted,
                         nonce: nonce,
@@ -125,7 +125,7 @@ export const appConfigStore = defineStore('AppConf', {
                 const res = await client.patch(url + "/" + that.gistsFileId, {
                     access_token: that.gistsAccessToken,
                     files: files,
-                    description: 'KISSH Setting Sync @' + time,
+                    description: 'ZenSSH Sync @' + time,
                     id: that.gistsFileId
                 }, headers)
                 if (res.status === 200) {
@@ -138,7 +138,7 @@ export const appConfigStore = defineStore('AppConf', {
                 const res = await client.post(url, {
                     access_token: that.gistsAccessToken,
                     files: files,
-                    description: 'KISSH Setting Sync @' + time,
+                    description: 'ZenSSH Sync @' + time,
                     public: false,
                 }, headers)
                 if (res.status === 201) {
@@ -169,12 +169,12 @@ export const appConfigStore = defineStore('AppConf', {
 
             // 加载并解密数据
             const res = await client.get(syncUrl, {headers: headers})
-            const kisshJson = JSON.parse(res.data.files['SyncCloud_kissh.json'].content)
+            const cloudJson = JSON.parse(res.data.files['SyncCloud.json'].content)
             // 通过加密salt 获取真实密钥
-            let keyB64 = await invoke("encrypt_derive_key", {password: userPass, salt: kisshJson.salt});
+            let keyB64 = await invoke("encrypt_derive_key", {password: userPass, salt: cloudJson.salt});
             const decrypt = await invoke("encrypt_decrypt_data", {
-                cipherB64: kisshJson.content,
-                nonceB64: kisshJson.nonce,
+                cipherB64: cloudJson.content,
+                nonceB64: cloudJson.nonce,
                 keyB64: keyB64,
             });
 

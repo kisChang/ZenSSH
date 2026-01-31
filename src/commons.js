@@ -29,6 +29,6 @@ export function isMobile() {
 
 // 系统常量
 export const CONSTANT = {
-    keyringService: "kissh_sync_password@kischang.top",
+    keyringService: "zenssh_sync_password@kischang.top",
     keyringUser: "user_sync_key"
 }
