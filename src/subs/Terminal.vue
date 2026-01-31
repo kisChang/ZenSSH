@@ -204,7 +204,9 @@ export default {
         invoke('ssh_run_command', {
           sessionId: this.sessionId,
           command: data
-        });
+        }).catch(err => {
+          // TODO 这里的异常如何处理待考虑
+        })
       });
 
       // 调整窗体大小
@@ -214,14 +216,14 @@ export default {
         sessionId: this.sessionId,
         colWidth: this.term.cols,
         rowHeight: this.term.rows,
-      });
+      }).catch()
       // Terminal resize 时通知 ssh
       this.term.onResize((event) => {
         invoke('ssh_window_change', {
           sessionId: this.sessionId,
           colWidth: event.cols,
           rowHeight: event.rows,
-        });
+        }).catch()
       });
       // 监听 Tauri 窗口大小变化
       window.addEventListener('resize', () => {
