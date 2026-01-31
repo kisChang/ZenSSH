@@ -36,6 +36,12 @@ jobs:
         with:
           targets: aarch64-apple-ios
 
+      - name: install Rust stable (ios)
+        if: matrix.mobile == ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
       - uses: maxim-lobanov/setup-xcode@v1
         if: matrix.mobile == 'ios'
         with:
@@ -67,7 +73,7 @@ jobs:
         run: yarn icon
 
       - name: Tauri Project
-        uses: tauri-apps/tauri-action@v0.6.1
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}

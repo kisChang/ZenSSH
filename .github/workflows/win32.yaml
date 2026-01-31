@@ -41,7 +41,7 @@ jobs:
         run: yarn icon
 
       - name: Tauri Project
-        uses: tauri-apps/tauri-action@v0.6.1
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
