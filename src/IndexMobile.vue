@@ -202,7 +202,7 @@ $text-sub: #94a3b8;
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom);
 
   height: 60px;
   display: flex;
