@@ -15,14 +15,14 @@
 
     <!-- 认证方式 -->
     <el-form-item :label="$t('connect.authType')">
-      <el-radio-group v-model="authType" @change="handleAuthTypeChange">
+      <el-radio-group v-model="config.authType" @change="handleAuthTypeChange">
         <el-radio value="password">{{ $t('connect.authType_pw') }}</el-radio>
         <el-radio value="key">{{ $t('connect.authType_key') }}</el-radio>
       </el-radio-group>
     </el-form-item>
 
     <!-- 密码认证 -->
-    <template v-if="authType === 'password'">
+    <template v-if="config.authType === 'password'">
       <el-form-item v-if="config.configId" :label="$t('connect.password')" prop="password">
         <el-input v-model="config.passwordNew" type="password" :placeholder="$t('connect.passwordNew_placeholder')" show-password />
       </el-form-item>
@@ -32,7 +32,7 @@
     </template>
 
     <!-- 私钥认证 -->
-    <template v-if="authType === 'key'">
+    <template v-if="config.authType === 'key'">
       <el-form-item :label="$t('connect.privateKeyPath')">
         <el-input v-model="config.privateKeyPath" :placeholder="$t('connect.privateKeyPath_placeholder')" />
       </el-form-item>
@@ -87,6 +87,7 @@ export const DEFAULT_CONFIG = {
   host: '',
   port: 22,
   username: '',
+  authType: 'password',
   password: '',
   passwordNew: '',
   privateKeyPath: '',
@@ -101,7 +102,6 @@ export default {
   name: "ConnForm",
   data() {
     return {
-      authType: 'password',
       bastionSessions: [],
 
       configRules: {
@@ -145,6 +145,7 @@ export default {
       })
     },
     handleAuthTypeChange(val) {
+      this.config.authType = val;
       if (val === 'password') {
         this.config.privateKeyPath = '';
         this.config.privateKeyData = '';
@@ -154,8 +155,8 @@ export default {
       }
     },
     reset() {
-      this.authType = 'password';
       this.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      this.config.authType = 'password';
     }
   }
 };
