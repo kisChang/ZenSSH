@@ -1,6 +1,6 @@
 <template>
   <div class="terminal-container">
-    <div ref="terminal" class="my-terminal" :style="termStyle" @click="showKeyboard = !showKeyboard"></div>
+    <div ref="terminal" class="my-terminal" :style="termStyle"></div>
 
     <div v-if="enableKeyboard" class="footer-keyboard" v-show="showKeyboard">
       <keyboard @press="pressKeyboard"/>
@@ -45,12 +45,13 @@
 
 <script>
 import {Channel, invoke} from "@tauri-apps/api/core";
+import {writeText} from '@tauri-apps/plugin-clipboard-manager';
 import {Terminal} from "@xterm/xterm";
 import {FitAddon} from "@xterm/addon-fit";
-import {useTabsStore} from "@/store.js";
 import {ProgressAddon} from "@xterm/addon-progress";
 import {SearchAddon} from '@xterm/addon-search';
 import Keyboard from "@/mobile/keyboard.vue";
+import {useTabsStore} from "@/store.js";
 import {isMobile} from "@/commons.js";
 const SCROLL_THRESHOLD = 6;  // 最小触发距离
 const SCROLL_SPEED = 12;     // 滚动速度（越小越快）
@@ -152,7 +153,6 @@ export default {
       const searchAddon = new SearchAddon();
       this.term.loadAddon(searchAddon);
       this.term.open(this.$refs.terminal);
-      this.term.focus();
       // 禁用输入后，这样可以直接使用内建的软键盘输入
       this.term.textarea.readOnly = true
       // 将event与Terminal建立连接，监听 SSH 事件
@@ -242,6 +242,7 @@ export default {
 
     pressKeyboard(code) {
       this.writeCode(code)
+      this.term.scrollToBottom()
       this.term.focus()
     },
     writeCode(code) {
@@ -284,7 +285,6 @@ export default {
         console.warn('加载端口转发列表失败:', e);
       }
     },
-
     handleForwardSuccess(data) {
       const forward = {
         id: 'pf_' + Math.random().toString(36).substring(2),
@@ -300,7 +300,6 @@ export default {
       this.tabStore.addPortForward(forward);
       this.term.write(`\r\n[端口转发已启动: ${data.local_host}:${data.local_port} -> ${data.remote_host}:${data.remote_port}]\r\n`);
     },
-
     handleForwardClosed(data) {
       const idx = this.portForwards.findIndex(f => f.channel_id === data.channel_id);
       if (idx >= 0) {
@@ -310,14 +309,12 @@ export default {
         this.term.write(`\r\n[端口转发已关闭: ${pf.local_host}:${pf.local_port}]\r\n`);
       }
     },
-
     showPortForwardDialog() {
       this.forwardConfig.local_port = 0;
       this.forwardConfig.remote_host = '';
       this.forwardConfig.remote_port = 22;
       this.showPortForward = true;
     },
-
     async createPortForward() {
       if (!this.forwardConfig.remote_host) {
         this.$message.warning('请输入远程主机地址');
@@ -337,7 +334,6 @@ export default {
         this.$message.error('创建端口转发失败: ' + e);
       }
     },
-
     async closePortForward(pf) {
       try {
         await invoke('ssh_close_port_forward', {
@@ -355,6 +351,7 @@ export default {
       if (!el) return
       el.addEventListener('touchstart', this.onTouchStart, { passive: true })
       el.addEventListener('touchmove', this.onTouchMove, { passive: false })
+      el.addEventListener('touchend', this.onTouchEnd, { passive: false })
     },
 
     unbindTouchEvents () {
@@ -362,22 +359,76 @@ export default {
       if (!el) return
       el.removeEventListener('touchstart', this.onTouchStart)
       el.removeEventListener('touchmove', this.onTouchMove)
+      el.removeEventListener('touchend', this.onTouchEnd)
     },
-    onTouchStart (e) {
-      this.startY = e.touches[0].clientY
-      this.lastY = this.startY
+    onTouchStart (event) {
+      this.lastY = event.clientY
+      this.startMove = true
+      this.longTouchTimeout = setTimeout(() => {
+        this.startSelect = true
+        // 显示一个开始选择光标
+        this.startSelect = this.calcPositionToColRow(event.clientX, event.clientY)
+        this.term.select(this.startSelect.col, this.startSelect.row, 1)
+      }, 1000);
     },
-
+    calcPositionToColRow(clientX, clientY) {
+      const x = clientX;
+      const y = clientY - 70; // 在点按位置的上方一点，方便用户看到
+      const dims = term._core._renderService.dimensions.css;
+      const cellWidth = dims.cell.width;
+      const cellHeight = dims.cell.height;
+      let col = Math.floor(x / cellWidth);
+      let row = Math.floor(y / cellHeight);
+      col = Math.max(0, Math.min(col, term.cols - 1));
+      row = Math.max(0, Math.min(row, term.rows - 1));
+      return {col, row}
+    },
+    calcCharDistance(a, b) {
+      const indexA = a.row * this.term.cols + a.col;
+      const indexB = b.row * this.term.cols + b.col;
+      return indexB - indexA;
+    },
+    onTouchEnd (e) {
+      this.startMove = false
+      clearTimeout(this.longTouchTimeout)
+      if (this.startSelect) {
+        this.startSelect = null
+        const selectionText = this.term.getSelection()
+        writeText(selectionText).then(() => {
+          this.notify.success('已复制到剪切板')
+        }).catch(err => {
+          this.notify.error('复制到剪切板失败：' + err)
+        })
+      } else {
+        // 仅在未触发长按时才触发这个事件
+        this.showKeyboard = !this.showKeyboard
+      }
+    },
     onTouchMove (e) {
-      const currentY = e.touches[0].clientY
-      const deltaY = this.lastY - currentY
-
-      if (Math.abs(deltaY) > SCROLL_THRESHOLD) {
-        const lines = Math.floor(deltaY / SCROLL_SPEED)
-        if (lines !== 0) {
-          this.term.scrollLines(lines)
-          this.lastY = currentY
-          e.preventDefault() // 阻止页面滚动
+      if (this.startSelect) {
+        // 滑动 选择 功能
+        // 1. 先计算新的位置
+        let newPos = this.calcPositionToColRow(e.clientX, e.clientY)
+        // 2. 再计算字符差
+        let dist = this.calcCharDistance(this.startSelect, newPos)
+        if (dist > 0) {
+          // 正向选择
+          this.term.select(this.startSelect.col, this.startSelect.row, dist)
+        } else {
+          // 反向选择
+          this.term.select(newPos.col, newPos.row, Math.abs(dist))
+        }
+      } else if (this.startMove){
+        // 滑动 scroll 功能
+        const currentY = e.clientY
+        const deltaY = this.lastY - currentY
+        if (Math.abs(deltaY) > SCROLL_THRESHOLD) {
+          const lines = Math.floor(deltaY / SCROLL_SPEED)
+          if (lines !== 0) {
+            this.term.scrollLines(lines)
+            this.lastY = currentY
+            e.preventDefault() // 阻止页面滚动
+          }
         }
       }
     },
