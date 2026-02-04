@@ -354,9 +354,9 @@ export default {
       doc.addEventListener('touchstart', this.onTouchStart, { passive: true })
       doc.addEventListener('touchmove', this.onTouchMove, { passive: false })
       doc.addEventListener('touchend', this.onTouchEnd, { passive: false })
-      // doc.addEventListener('mousedown', this.onMouseStart, { passive: true })
-      // doc.addEventListener('mousemove', this.onTouchMove, { passive: false })
-      // doc.addEventListener('mouseup', this.onTouchEnd, { passive: false })
+      doc.addEventListener('mousedown', this.onMouseStart, { passive: true })
+      doc.addEventListener('mousemove', this.onTouchMove, { passive: false })
+      doc.addEventListener('mouseup', this.onTouchEnd, { passive: false })
     },
 
     unbindTouchEvents () {
@@ -366,23 +366,38 @@ export default {
       doc.removeEventListener('touchstart', this.onTouchStart)
       doc.removeEventListener('touchmove', this.onTouchMove)
       doc.removeEventListener('touchend', this.onTouchEnd)
-      // doc.removeEventListener('mousedown', this.onMouseStart)
-      // doc.removeEventListener('mousemove', this.onTouchMove)
-      // doc.removeEventListener('mouseup', this.onTouchEnd)
+      doc.removeEventListener('mousedown', this.onMouseStart)
+      doc.removeEventListener('mousemove', this.onTouchMove)
+      doc.removeEventListener('mouseup', this.onTouchEnd)
+    },
+    fun_clientXY(event, name) {
+      if (event[name]) {
+        return event[name]
+      }
+      if (event?.touches?.length) {
+        return event.touches[0][name]
+      }
     },
     onMouseStart (event) {
       if (event.button === 1) this.onTouchStart(event)
     },
     onTouchStart (event) {
-      const clientX = event?.touches[0].clientX | event.clientX
-      const clientY = event?.touches[0].clientY | event.clientY
+      const clientX = this.fun_clientXY(event, 'clientX')
+      const clientY = this.fun_clientXY(event, 'clientY')
       this.lastY = clientY
-      this.startMove = true
+      this.enScroll = true
       this.longTouchTimeout = setTimeout(() => {
-        this.startSelect = true
-        // 显示一个开始选择光标
-        this.startSelect = this.calcPositionToColRow(clientX, clientY)
-        this.term.select(this.startSelect.col, this.startSelect.row, 1)
+        this.enScroll = false
+        this.enSelect = true
+        if (this.startSelect) {
+          // 第二次拖选
+          this.endSelect = this.startSelect
+          this.term.select(this.startSelect.col, this.startSelect.row, 5)
+        } else {
+          // 显示一个开始选择光标
+          this.startSelect = this.calcPositionToColRow(clientX, clientY)
+          this.term.select(this.startSelect.col, this.startSelect.row, 1)
+        }
       }, 1000);
     },
     calcPositionToColRow(clientX, clientY) {
@@ -390,7 +405,7 @@ export default {
       // 调一些位置，方便用户看到
       let y
       if (this.showKeyboard && this.enableKeyboard) {
-        y = clientY + 100
+        y = clientY - 120
       } else {
         y = clientY - 120
       }
@@ -398,9 +413,8 @@ export default {
       const cellWidth = dims.cell.width;
       const cellHeight = dims.cell.height;
       let col = Math.floor(x / cellWidth);
-      let row = Math.floor(y / cellHeight);
-      // col = Math.max(0, Math.min(col, this.term.cols - 1));
-      // row = Math.max(0, Math.min(row, this.term.rows - 1));
+      // 加上当前滚动的行
+      let row = Math.floor(y / cellHeight) + this.term.buffer.active.viewportY;
       return {col, row}
     },
     calcCharDistance(a, b) {
@@ -409,40 +423,52 @@ export default {
       return indexB - indexA;
     },
     onTouchEnd (e) {
-      this.startMove = false
+      this.enSelect = false
+      this.enScroll = false
       clearTimeout(this.longTouchTimeout)
       if (this.startSelect) {
-        this.startSelect = null
-        const selectionText = this.term.getSelection()
-        writeText(selectionText).then(() => {
-          this.notify.success('已复制到剪切板')
-        }).catch(err => {
-          this.notify.error('复制到剪切板失败：' + err)
-        })
+        if (this.endSelect) {
+          this.startSelect = null
+          this.endSelect = null
+          const selectionText = this.term.getSelection()
+          writeText(selectionText).then(() => {
+            this.notify.success('已复制到剪切板')
+          }).catch(err => {
+            this.notify.error('复制到剪切板失败：' + err)
+          })
+        } else {
+          this.endSelect = this.startSelect
+        }
       } else {
         // 仅在未触发长按时才触发这个事件
         this.showKeyboard = !this.showKeyboard
       }
     },
     onTouchMove (event) {
-      if (this.startSelect) {
+      if (this.enSelect) {
         // 滑动 选择 功能
-        const clientX = event?.touches[0].clientX || event.clientX
-        const clientY = event?.touches[0].clientY || event.clientY
+        const clientX = this.fun_clientXY(event, 'clientX')
+        const clientY = this.fun_clientXY(event, 'clientY')
         // 1. 先计算新的位置
         let newPos = this.calcPositionToColRow(clientX, clientY)
-        // 2. 再计算字符差
-        let dist = this.calcCharDistance(this.startSelect, newPos)
-        if (dist > 0) {
-          // 正向选择
-          this.term.select(this.startSelect.col, this.startSelect.row, dist)
+        if (this.endSelect) {
+          // 2. 再计算字符差
+          let dist = this.calcCharDistance(this.startSelect, newPos)
+          if (dist > 0) {
+            // 正向选择
+            this.term.select(this.startSelect.col, this.startSelect.row, dist)
+          } else {
+            // 反向选择
+            this.term.select(newPos.col, newPos.row, Math.abs(dist) + 1)
+          }
         } else {
-          // 反向选择
-          this.term.select(newPos.col, newPos.row, Math.abs(dist))
+          // 2. 仅移动光标
+          this.startSelect = newPos
+          this.term.select(newPos.col, newPos.row, 1)
         }
-      } else if (this.startMove){
+      } else if (this.enScroll){
         // 滑动 scroll 功能
-        const currentY = event?.touches[0].clientY || event.clientY
+        const currentY = this.fun_clientXY(event, 'clientY')
         const deltaY = this.lastY - currentY
         if (Math.abs(deltaY) > SCROLL_THRESHOLD) {
           const lines = Math.floor(deltaY / SCROLL_SPEED)
