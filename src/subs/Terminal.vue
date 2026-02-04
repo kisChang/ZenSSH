@@ -5,6 +5,12 @@
     <div v-if="enableKeyboard" class="footer-keyboard" v-show="showKeyboard">
       <keyboard @press="pressKeyboard" @click.stop=""/>
     </div>
+
+    <div v-if="showAutocomplete.show" class="show-autocomplete" :style="showAutocomplete">
+      <div>ls</div>
+      <div>ls -al</div>
+    </div>
+
     <!-- TODO 端口转发面板  暂不支持 -->
     <div v-if="false" class="port-forward">
       <div v-if="portForwards.length > 0" class="port-forward-panel">
@@ -77,6 +83,7 @@ export default {
       closed: false,
       term: null, termStyle: { bottom: 0, height: '100vh' },
       showKeyboard: true, enableKeyboard: false,
+      currenLine: "", showAutocomplete: {show: false, left: '100px', top: '100px'},
       // 端口转发相关
       portForwards: [],
       showPortForward: false,
@@ -232,7 +239,9 @@ export default {
       window.visualViewport.addEventListener('resize', () => {
         this.updateTerminalSize()
       });
-
+      this.term.onKey(({key, domEvent}) => {
+        this.handleAutocomplete(key)
+      })
       this.updateTerminalSize()
       // 处理触摸事件
       this.bindTouchEvents()
@@ -244,12 +253,50 @@ export default {
       this.writeCode(code)
       this.term.scrollToBottom()
       this.term.focus()
+      this.handleAutocomplete(code)
     },
     writeCode(code) {
       invoke('ssh_run_command', {
         sessionId: this.sessionId,
         command: code
       })
+    },
+    handleAutocomplete(data) {
+      switch (data) {
+        case '\r':
+          this.currenLine = '';
+          break;
+
+        case '\x7f':
+          this.currenLine = this.currenLine.slice(0, -1);
+          break;
+
+        case '\x03': // Ctrl+C
+        case '\x15': // Ctrl+U
+          this.currenLine = '';
+          break;
+
+        case '\x17': // Ctrl+W
+          this.currenLine = this.currenLine.substring(0, this.currenLine.lastIndexOf(" "))
+          break;
+
+        default:
+          if (data >= ' ' && data <= '~') {
+            this.currenLine += data;
+          }
+      }
+
+      if (this.currenLine.length > 0) {
+        // 显示 autocomplete
+        let pos = this.calcGetCursorScreenPosition()
+        if (pos && pos.pageY) {
+          // this.showAutocomplete.show = true
+          // this.showAutocomplete.top = pos.pageY + 'px'
+          // this.showAutocomplete.left = pos.pageX + 'px'
+        }
+      } else {
+        this.showAutocomplete.show = false
+      }
     },
 
     updateTerminalSize() {
@@ -357,6 +404,7 @@ export default {
       // doc.addEventListener('mousedown', this.onMouseStart, { passive: true })
       // doc.addEventListener('mousemove', this.onTouchMove, { passive: false })
       // doc.addEventListener('mouseup', this.onTouchEnd, { passive: false })
+      window.term = this.term
     },
 
     unbindTouchEvents () {
@@ -421,6 +469,30 @@ export default {
       const indexA = a.row * this.term.cols + a.col;
       const indexB = b.row * this.term.cols + b.col;
       return indexB - indexA;
+    },
+    calcGetCursorScreenPosition() {
+      const term = this.term
+      const terminalElement = this.term.element
+      const buffer = term.buffer.active;
+      const screenRow = buffer.cursorY - buffer.viewportY;
+      const screenCol = buffer.cursorX;
+      if (screenRow < 0 || screenRow >= term.rows) {
+        return null; // 光标不在屏幕内
+      }
+      const dims = term._core._renderService.dimensions.css;
+      const cellWidth = dims.cell.width;
+      const cellHeight = dims.cell.height;
+      const x = screenCol * cellWidth;
+      const y = screenRow * cellHeight;
+      const rect = terminalElement.getBoundingClientRect();
+      return {
+        screenRow,
+        screenCol,
+        x,
+        y,
+        pageX: rect.left + x,
+        pageY: rect.top + y,
+      };
     },
     onTouchEnd (e) {
       this.enSelect = false
@@ -492,6 +564,20 @@ export default {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 70px);
+}
+
+.show-autocomplete {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+  background: #5995b3;
+  border-radius: 3px;
+  div {
+    padding: 0 2px;
+    border-bottom: 1px solid #DDD;
+
+  }
 }
 
 .my-terminal {
