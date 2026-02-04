@@ -88,7 +88,7 @@ export const appConfigStore = defineStore('AppConf', {
         },
         async syncToCloud() {
             //0. 处理需要同步的数据
-            let confData = structuredClone(useMngStore().$state);
+            let confData = JSON.parse(JSON.stringify(useMngStore().$state));
             // 清理不需要的数据
             for (let config of confData.configList) {
                 delete config.isCloud

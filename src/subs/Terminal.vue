@@ -1,9 +1,9 @@
 <template>
-  <div class="terminal-container">
+  <div class="terminal-container" ref="container">
     <div ref="terminal" class="my-terminal" :style="termStyle"></div>
 
     <div v-if="enableKeyboard" class="footer-keyboard" v-show="showKeyboard">
-      <keyboard @press="pressKeyboard"/>
+      <keyboard @press="pressKeyboard" @click.stop=""/>
     </div>
     <!-- TODO 端口转发面板  暂不支持 -->
     <div v-if="false" class="port-forward">
@@ -258,9 +258,10 @@ export default {
       // Terminal 距离底部
       this.termStyle.bottom = footerHeight + 'px';
       this.termStyle.height = footerHeight + 'px';
-      this.$nextTick(() => {
-        this.fitAddon.fit()
+      this.$nextTick(async () => {
         this.term.focus()
+        this.fitAddon.fit()
+        this.term.scrollToBottom()
       })
     },
 
@@ -349,38 +350,57 @@ export default {
     bindTouchEvents () {
       const el = this.term.element
       if (!el) return
-      el.addEventListener('touchstart', this.onTouchStart, { passive: true })
-      el.addEventListener('touchmove', this.onTouchMove, { passive: false })
-      el.addEventListener('touchend', this.onTouchEnd, { passive: false })
+      const doc = el
+      doc.addEventListener('touchstart', this.onTouchStart, { passive: true })
+      doc.addEventListener('touchmove', this.onTouchMove, { passive: false })
+      doc.addEventListener('touchend', this.onTouchEnd, { passive: false })
+      // doc.addEventListener('mousedown', this.onMouseStart, { passive: true })
+      // doc.addEventListener('mousemove', this.onTouchMove, { passive: false })
+      // doc.addEventListener('mouseup', this.onTouchEnd, { passive: false })
     },
 
     unbindTouchEvents () {
       const el = this.term && this.term.element
       if (!el) return
-      el.removeEventListener('touchstart', this.onTouchStart)
-      el.removeEventListener('touchmove', this.onTouchMove)
-      el.removeEventListener('touchend', this.onTouchEnd)
+      const doc = el
+      doc.removeEventListener('touchstart', this.onTouchStart)
+      doc.removeEventListener('touchmove', this.onTouchMove)
+      doc.removeEventListener('touchend', this.onTouchEnd)
+      // doc.removeEventListener('mousedown', this.onMouseStart)
+      // doc.removeEventListener('mousemove', this.onTouchMove)
+      // doc.removeEventListener('mouseup', this.onTouchEnd)
+    },
+    onMouseStart (event) {
+      if (event.button === 1) this.onTouchStart(event)
     },
     onTouchStart (event) {
-      this.lastY = event.clientY
+      const clientX = event?.touches[0].clientX | event.clientX
+      const clientY = event?.touches[0].clientY | event.clientY
+      this.lastY = clientY
       this.startMove = true
       this.longTouchTimeout = setTimeout(() => {
         this.startSelect = true
         // 显示一个开始选择光标
-        this.startSelect = this.calcPositionToColRow(event.clientX, event.clientY)
+        this.startSelect = this.calcPositionToColRow(clientX, clientY)
         this.term.select(this.startSelect.col, this.startSelect.row, 1)
       }, 1000);
     },
     calcPositionToColRow(clientX, clientY) {
-      const x = clientX;
-      const y = clientY - 70; // 在点按位置的上方一点，方便用户看到
-      const dims = term._core._renderService.dimensions.css;
+      const x = clientX
+      // 调一些位置，方便用户看到
+      let y
+      if (this.showKeyboard && this.enableKeyboard) {
+        y = clientY + 100
+      } else {
+        y = clientY - 120
+      }
+      const dims = this.term._core._renderService.dimensions.css;
       const cellWidth = dims.cell.width;
       const cellHeight = dims.cell.height;
       let col = Math.floor(x / cellWidth);
       let row = Math.floor(y / cellHeight);
-      col = Math.max(0, Math.min(col, term.cols - 1));
-      row = Math.max(0, Math.min(row, term.rows - 1));
+      // col = Math.max(0, Math.min(col, this.term.cols - 1));
+      // row = Math.max(0, Math.min(row, this.term.rows - 1));
       return {col, row}
     },
     calcCharDistance(a, b) {
@@ -404,11 +424,13 @@ export default {
         this.showKeyboard = !this.showKeyboard
       }
     },
-    onTouchMove (e) {
+    onTouchMove (event) {
       if (this.startSelect) {
         // 滑动 选择 功能
+        const clientX = event?.touches[0].clientX || event.clientX
+        const clientY = event?.touches[0].clientY || event.clientY
         // 1. 先计算新的位置
-        let newPos = this.calcPositionToColRow(e.clientX, e.clientY)
+        let newPos = this.calcPositionToColRow(clientX, clientY)
         // 2. 再计算字符差
         let dist = this.calcCharDistance(this.startSelect, newPos)
         if (dist > 0) {
@@ -420,14 +442,17 @@ export default {
         }
       } else if (this.startMove){
         // 滑动 scroll 功能
-        const currentY = e.clientY
+        const currentY = event?.touches[0].clientY || event.clientY
         const deltaY = this.lastY - currentY
         if (Math.abs(deltaY) > SCROLL_THRESHOLD) {
           const lines = Math.floor(deltaY / SCROLL_SPEED)
           if (lines !== 0) {
+            // 禁止再触发选择
+            clearTimeout(this.longTouchTimeout)
+            // 开始移动
             this.term.scrollLines(lines)
             this.lastY = currentY
-            e.preventDefault() // 阻止页面滚动
+            event.preventDefault() // 阻止页面滚动
           }
         }
       }
