@@ -145,11 +145,7 @@ export default {
         },
         cursorStyle: 'bar',
         cursorInactiveStyle: 'bar',
-        linkHandler: {
-          hover(event, text, range) {
-            console.log('linkHandler text :', text)
-          }
-        }
+        linkHandler: {} // 暂不支持
       });
       this.fitAddon = new FitAddon()
       this.term.loadAddon(this.fitAddon)

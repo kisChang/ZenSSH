@@ -155,7 +155,6 @@ export default {
     _keyUp() {
     },
     _keyDown() {
-      console.log('_keyDown>>>')
       this.$emit('press', this.code ? this.code : this.title)
     }
   },
