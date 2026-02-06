@@ -56,9 +56,14 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 
 * [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
-## Notes
+## Build step
 
-The `src-tauri` folder is **not open-sourced yet**, but it may be in the future.
+```bash
+1. Run `yarn icon` to initialize the icon.
+2. Run `yarn tauri android|ios init` to initialize the mobile app.
+3. Then you can compile and build the project.
+
+```
 
 ## License
 

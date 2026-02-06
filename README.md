@@ -57,9 +57,14 @@ ZenSSH 是一款基于 Tauri 构建的全平台 SSH 客户端，支持 SSH 连�
 - [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
 
-## 说明
+## 构建步骤
 
-src-tauri 目前暂未开源，后续会考虑开源。
+
+```bash
+1. 运行 yarn icon 初始化图标
+2. 运行 yarn tauri android|ios init 初始化移动端
+3. 然后即可编译构建项目
+```
 
 
 ## 开源协议 / 许可证（License）
