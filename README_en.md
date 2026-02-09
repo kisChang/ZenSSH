@@ -59,10 +59,9 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 ## Build step
 
 ```bash
-1. Run `yarn icon` to initialize the icon.
-2. Run `yarn tauri android|ios init` to initialize the mobile app.
+1. Run `yarn tauri android|ios init` to initialize the mobile app.
+2. Run `yarn icon` to initialize the icon.
 3. Then you can compile and build the project.
-
 ```
 
 ## License
