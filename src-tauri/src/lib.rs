@@ -4,6 +4,12 @@ mod ssh;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let log_level = if cfg!(debug_assertions) {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Error
+    };
+
     let mut builder = tauri::Builder::default()
         .setup(|_app| {
             #[cfg(desktop)]
@@ -21,7 +27,9 @@ pub fn run() {
         .plugin(tauri_plugin_keep_screen_on::init())
         .plugin(tauri_plugin_android_battery_optimization::init())
         .plugin(tauri_plugin_keyring::init())
-        .plugin(tauri_plugin_log::Builder::new().build());
+        .plugin(tauri_plugin_log::Builder::new()
+            .level(log_level)
+            .build());
 
     builder = builder.invoke_handler(tauri::generate_handler![
         // 连接命令
