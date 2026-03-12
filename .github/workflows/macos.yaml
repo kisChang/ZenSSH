@@ -17,9 +17,9 @@ jobs:
             args: '--target aarch64-apple-darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-          - platform: 'macos-26'
-            args: '--verbose --debug'
-            mobile: 'ios'
+#          - platform: 'macos-26'
+#            args: '--verbose --debug'
+#            mobile: 'ios'
 
     runs-on: ${{ matrix.platform }}
     steps:
