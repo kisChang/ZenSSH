@@ -1,9 +1,9 @@
 <template>
-  <div class="container" v-loading="isLoading">
+  <div class="container">
   <el-config-provider :locale="locale">
-    <index-mobile v-if="isMobile"/>
+    <index-mobile v-if="isMobile" :is-loading="isLoading"/>
     <el-container v-else-if="isPc">
-      <el-header height="40px" class="header">
+      <el-header v-loading="isLoading" height="40px" class="header">
         <el-menu mode="horizontal"
                  class="app-menu"
                  menu-trigger="click"

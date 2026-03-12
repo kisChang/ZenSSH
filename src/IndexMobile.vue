@@ -4,7 +4,10 @@
       <div class="left">
         <span class="title"></span>
       </div>
-      <div class="center">{{ title }}</div>
+      <div class="center">
+        <el-icon v-if="isLoading" class="is-loading"><Loading /></el-icon>
+        {{ title }}
+      </div>
       <div class="right">
       </div>
     </header>
@@ -47,10 +50,14 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
+import {Loading} from "@element-plus/icons-vue";
 
 export default {
   name: "IndexMobile",
-  components: {MobileSetting, MobileHost, TerminalTabs, ConnectManage},
+  props: {
+    isLoading: false,
+  },
+  components: {Loading, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
   data() {
     const tabsStore = useTabsStore();
     return {
