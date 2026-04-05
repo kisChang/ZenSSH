@@ -10,42 +10,6 @@
       <div>ls</div>
       <div>ls -al</div>
     </div>
-
-    <!-- TODO 端口转发面板  暂不支持 -->
-    <div v-if="false" class="port-forward">
-      <div v-if="portForwards.length > 0" class="port-forward-panel">
-        <div class="panel-header">
-          <span>端口转发</span>
-          <el-button size="small" type="primary" @click="showPortForwardDialog">添加</el-button>
-        </div>
-        <div v-for="pf in portForwards" :key="pf.id" class="forward-item">
-          <span>{{ pf.local_host }}:{{ pf.local_port }} -> {{ pf.remote_host }}:{{ pf.remote_port }}</span>
-          <el-button size="small" type="danger" @click="closePortForward(pf)">关闭</el-button>
-        </div>
-      </div>
-      <div v-else class="port-forward-empty">
-        <el-button size="small" @click="showPortForwardDialog" v-if="!closed">添加端口转发</el-button>
-      </div>
-
-      <!-- 端口转发对话框 -->
-      <el-dialog v-model="showPortForward" title="添加端口转发" width="400px">
-        <el-form :model="forwardConfig" label-width="80px">
-          <el-form-item label="本地端口">
-            <el-input-number v-model="forwardConfig.local_port" :min="1024" :max="65535" style="width: 100%"/>
-          </el-form-item>
-          <el-form-item label="远程主机">
-            <el-input v-model="forwardConfig.remote_host" placeholder="远程目标地址" />
-          </el-form-item>
-          <el-form-item label="远程端口">
-            <el-input-number v-model="forwardConfig.remote_port" :min="1" :max="65535" style="width: 100%"/>
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="showPortForward = false">{{ $t('common.cancel') }}</el-button>
-          <el-button type="primary" @click="createPortForward">确定</el-button>
-        </template>
-      </el-dialog>
-    </div>
   </div>
 </template>
 
@@ -59,6 +23,7 @@ import {SearchAddon} from '@xterm/addon-search';
 import Keyboard from "@/mobile/keyboard.vue";
 import {useTabsStore} from "@/store.js";
 import {isMobile} from "@/commons.js";
+
 const SCROLL_THRESHOLD = 6;  // 最小触发距离
 const SCROLL_SPEED = 12;     // 滚动速度（越小越快）
 
@@ -84,15 +49,6 @@ export default {
       term: null, termStyle: { bottom: 0, height: '100vh' },
       showKeyboard: true, enableKeyboard: false,
       currenLine: "", showAutocomplete: {show: false, left: '100px', top: '100px'},
-      // 端口转发相关
-      portForwards: [],
-      showPortForward: false,
-      forwardConfig: {
-        local_host: '127.0.0.1',
-        local_port: 0,
-        remote_host: '',
-        remote_port: 22,
-      }
     }
   },
   watch: {
@@ -181,14 +137,6 @@ export default {
           case "openFailure":
             this.term.write(`\r\n[channel open failed, code=${data.code}]\r\n`);
             break;
-          case "forwardSuccess":
-            // 端口转发成功
-            this.handleForwardSuccess(data);
-            break;
-          case "forwardClosed":
-            // 端口转发关闭
-            this.handleForwardClosed(data);
-            break;
           default:
             console.debug("ssh event:", event);
         }
@@ -243,6 +191,10 @@ export default {
       this.bindTouchEvents()
       // 加载现有端口转发
       await this.loadPortForwards();
+    },
+
+    async loadPortForwards(){
+      // TODO 连接后如何处理端口转发
     },
 
     pressKeyboard(code) {
@@ -306,87 +258,6 @@ export default {
         this.fitAddon.fit()
         this.term.scrollToBottom()
       })
-    },
-
-    async loadPortForwards() {
-      try {
-        const forwards = await invoke('ssh_list_port_forwards', {
-          sessionId: this.sessionId
-        });
-        if (forwards && forwards.length > 0) {
-          this.portForwards = forwards.map((f, idx) => ({
-            id: 'pf_' + idx,
-            session_id: this.sessionId,
-            channel_id: f.channel_id,
-            local_host: f.local_host,
-            local_port: f.local_port,
-            remote_host: f.remote_host,
-            remote_port: f.remote_port,
-            state: 'active'
-          }));
-        }
-      } catch (e) {
-        console.warn('加载端口转发列表失败:', e);
-      }
-    },
-    handleForwardSuccess(data) {
-      const forward = {
-        id: 'pf_' + Math.random().toString(36).substring(2),
-        session_id: this.sessionId,
-        channel_id: data.channel_id,
-        local_host: data.local_host,
-        local_port: data.local_port,
-        remote_host: data.remote_host,
-        remote_port: data.remote_port,
-        state: 'active'
-      };
-      this.portForwards.push(forward);
-      this.tabStore.addPortForward(forward);
-      this.term.write(`\r\n[端口转发已启动: ${data.local_host}:${data.local_port} -> ${data.remote_host}:${data.remote_port}]\r\n`);
-    },
-    handleForwardClosed(data) {
-      const idx = this.portForwards.findIndex(f => f.channel_id === data.channel_id);
-      if (idx >= 0) {
-        const pf = this.portForwards[idx];
-        this.portForwards.splice(idx, 1);
-        this.tabStore.removePortForward(pf.id);
-        this.term.write(`\r\n[端口转发已关闭: ${pf.local_host}:${pf.local_port}]\r\n`);
-      }
-    },
-    showPortForwardDialog() {
-      this.forwardConfig.local_port = 0;
-      this.forwardConfig.remote_host = '';
-      this.forwardConfig.remote_port = 22;
-      this.showPortForward = true;
-    },
-    async createPortForward() {
-      if (!this.forwardConfig.remote_host) {
-        this.$message.warning('请输入远程主机地址');
-        return;
-      }
-      try {
-        await invoke('ssh_port_forward', {
-          sessionId: this.sessionId,
-          localHost: this.forwardConfig.local_host,
-          localPort: this.forwardConfig.local_port,
-          remoteHost: this.forwardConfig.remote_host,
-          remotePort: this.forwardConfig.remote_port,
-        });
-        this.showPortForward = false;
-        this.$message.success('端口转发创建成功');
-      } catch (e) {
-        this.$message.error('创建端口转发失败: ' + e);
-      }
-    },
-    async closePortForward(pf) {
-      try {
-        await invoke('ssh_close_port_forward', {
-          sessionId: this.sessionId,
-          channelId: pf.channel_id,
-        });
-      } catch (e) {
-        this.$message.error('关闭端口转发失败: ' + e);
-      }
     },
 
     /*触摸滚动支持*/
@@ -595,47 +466,5 @@ export default {
   max-height: 0;
   height: 0;
   padding: 0;
-}
-
-.port-forward {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 100px;
-  height: 20px;
-  display: none;
-  z-index: 10;
-}
-.port-forward-panel {
-  border-top: 1px solid #ddd;
-  padding: 8px;
-  background: #f5f5f5;
-
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    font-weight: bold;
-    font-size: 14px;
-  }
-
-  .forward-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 8px;
-    background: #fff;
-    border-radius: 4px;
-    margin-bottom: 4px;
-    font-size: 13px;
-  }
-}
-
-.port-forward-empty {
-  border-top: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
-  background: #f5f5f5;
 }
 </style>
