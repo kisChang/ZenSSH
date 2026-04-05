@@ -76,12 +76,53 @@
     <el-form-item :label="$t('connect.keepaliveInterval')">
       <el-input-number v-model="config.keepaliveInterval" :min="0" :max="300" />
     </el-form-item>
+
+    <!-- 端口映射配置   -->
+    <el-form-item>
+      <template v-slot:label>
+        <div>
+          <div>端口转发</div>
+          <el-button size="small" type="primary" @click="addPortForward">添加</el-button>
+        </div>
+      </template>
+      <div class="forward-item" v-if="config.portForwards && config.portForwards.length">
+        <el-row v-for="pf in config.portForwards" :key="pf.id">
+          <el-col :span="7">
+            <el-input size="small" v-model="pf.local_host" />
+          </el-col>
+          <el-col :span="4">
+            <el-input type="number" size="small" v-model="pf.local_port" />
+          </el-col>
+          <el-col :span="1">
+            <el-icon style="rotate: 90deg"><Sort /></el-icon>
+          </el-col>
+          <el-col :span="7">
+            <el-input size="small" v-model="pf.remote_host" />
+          </el-col>
+          <el-col :span="4">
+            <el-input type="number" size="small" v-model="pf.remote_port" />
+          </el-col>
+          <el-col :span="1" style="padding: 3px;">
+            <el-icon size="15"><CircleClose /></el-icon>
+          </el-col>
+        </el-row>
+      </div>
+      <div v-else style="margin: auto;">
+        <el-empty image-size="50" description="No Port Forward Config." />
+      </div>
+    </el-form-item>
   </el-form>
 </template>
 
 <script>
 import {useMngStore} from "@/store.js";
 
+export const DEFAULT_PF = {
+  local_host: "localhost",
+  local_port: 0,
+  remote_host: "localhost",
+  remote_port: 0,
+}
 export const DEFAULT_CONFIG = {
   name: '',
   host: '',
@@ -96,6 +137,9 @@ export const DEFAULT_CONFIG = {
   timeout: 30,
   keepaliveInterval: 30,
   bastionConfigId: '',
+
+  // 端口转发配置
+  portForwards: [],
 };
 
 export default {
@@ -137,6 +181,12 @@ export default {
     this.bastionSessions = useMngStore().configList
   },
   methods: {
+    // port forward
+    addPortForward() {
+      this.config.portForwards.push({ ...DEFAULT_PF })
+    },
+
+
     valid(func) {
       this.$refs.form.validate(valid => {
         if (valid) {
@@ -174,6 +224,10 @@ export default {
   }
   :deep(.el-form-item__error) {
     font-size: 10px;
+  }
+
+  .forward-item {
+    min-height: 100px;
   }
 }
 </style>
