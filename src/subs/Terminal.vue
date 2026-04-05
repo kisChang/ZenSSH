@@ -138,7 +138,7 @@ export default {
       this.term = new Terminal({
         cursorBlink: true,
         fontSize: fontSize,
-        disableStdin: true,
+        disableStdin: this.enableKeyboard,
         fontFamily: 'monospace',
         overviewRuler: {
           width: 5,
@@ -157,7 +157,7 @@ export default {
       this.term.loadAddon(searchAddon);
       this.term.open(this.$refs.terminal);
       // 禁用输入后，这样可以直接使用内建的软键盘输入
-      this.term.textarea.readOnly = true
+      this.term.textarea.readOnly = this.enableKeyboard
       // 将event与Terminal建立连接，监听 SSH 事件
       const onEvent = new Channel();
       onEvent.onmessage = ({ event, data }) => {
