@@ -16,7 +16,7 @@
           <el-icon v-if="item.state === 2" color="#F40"><CircleCloseFilled/></el-icon>
         </template>
         <span>{{ item.title }}</span>
-        <el-icon class="tab-icon" @click="removeTab($event, item.sessionId || item.id)"><CloseBold /></el-icon>
+        <el-icon class="tab-icon" @click="removeTab($event, item.sessionId || item.id)"><CircleClose /></el-icon>
       </template>
       <el-empty
           v-if="item.type === 'welcome'"
@@ -204,10 +204,9 @@ export default {
     padding-right: 10px !important;
   }
   .tab-icon {
-    width: 10px;
-    height: 10px;
-    padding: 2px;
-    border: 1px solid var(--el-color-primary);
+    width: 25px;
+    height: 25px;
+    padding: 0;
     margin-left: 10px;
     border-radius: 50%;
     &:hover {
