@@ -1,18 +1,16 @@
 <template>
   <div class="container">
-  <el-config-provider :locale="locale">
-    <index-mobile v-if="isMobile"
-                  :is-loading="isLoading"/>
-    <index-pc v-else-if="isPc"
-              :is-loading="isLoading"/>
-  </el-config-provider>
+    <el-config-provider :locale="locale">
+      <index-mobile v-if="isMobile"
+                    :is-loading="isLoading"/>
+      <index-pc v-else-if="isPc"
+                :is-loading="isLoading"/>
+    </el-config-provider>
   </div>
 </template>
 
 <script>
 import {listen} from '@tauri-apps/api/event'
-import ConnectManage from "./views/ConnectManage.vue";
-import TerminalTabs from "./views/TerminalTabs.vue";
 import {appConfigStore, appRunState, useMngStore} from "@/store.js";
 import IndexMobile from "@/IndexMobile.vue";
 import IndexPc from "@/IndexPc.vue";
@@ -22,7 +20,7 @@ import en from 'element-plus/es/locale/lang/en'
 
 export default {
   name: "Tauri",
-  components: {IndexMobile, IndexPc, TerminalTabs, ConnectManage},
+  components: {IndexMobile, IndexPc},
   data() {
     return {
       isLoading: true, locale: zhCn,
@@ -97,7 +95,7 @@ export default {
       this.isLoading = true
       let res = await appConfigStore().loadByCloud()
       if (res) {
-        this.notify({message: "加载云端数据成功", type: "success"})
+        this.notify({message: "云端数据同步成功", type: "success"})
         this.$forceUpdate()
       }
     },
