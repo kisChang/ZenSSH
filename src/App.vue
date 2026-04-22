@@ -177,17 +177,6 @@ html, body {
   height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  .header {
-    height: 30px;
-    padding: 0;
-    background: #525252;
-  }
-  .aside-hidden {
-    width: 0 !important;
-  }
-  :deep(.el-splitter) {
-    height: calc(100vh - 30px);
-  }
 }
 
 .btn {

@@ -152,6 +152,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.header {
+  height: 30px;
+  padding: 0;
+  background: #525252;
+}
+.aside-hidden {
+  width: 0 !important;
+}
+:deep(.el-splitter) {
+  height: calc(100vh - 30px);
+}
+
 .el-menu--horizontal {
   --el-menu-horizontal-height: 100%;
   user-select: none;
