@@ -18,10 +18,6 @@
       </el-scrollbar>
     </div>
     <div v-else-if="configList.length" style="text-align: center;">
-      <img class="app-icon" src="/logo.png"/>
-      <div style="font-size: 0.9rem;padding: 10px 20px;">
-        {{  $t('common.hello') }}
-      </div>
       <el-scrollbar class="config-list">
         <div v-for="once of configList"
              class="config-item"
@@ -38,13 +34,10 @@
     <div v-else style="text-align: center;">
       <img class="app-icon" src="/logo.png" />
 
-      <h2>连接主机</h2>
-      <p class="desc">
-        将您的连接详细信息保存为主机名，<br/>
-        即可一键连接。
-      </p>
+      <h2>{{ $t('main.quickConnect') }}</h2>
+      <p class="desc" v-html="$t('common.hello')"></p>
 
-      <button class="btn" style="width: 70%;" @click="handleConnNew">开始连接</button>
+      <button class="btn" style="width: 70%;" @click="handleConnNew">{{ $t('main.connectNow') }}</button>
     </div>
 
     <div v-if="!showConnect" class="fab" @click="handleConnNew">+</div>
@@ -150,15 +143,15 @@ $green: #22c55e;
 
   .config-list {
     padding: 0 10px;
-    height: calc(100vh - 320px);
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 130px);
     user-select: none;
     .config-item:first-child {
-      border-top: 1px solid #aeaeae;
+      border-top: 1px solid #686868;
     }
     .config-item {
       text-align: left;
       padding: 5px 10px;
-      border-bottom: 1px solid #aeaeae;
+      border-bottom: 1px solid #686868;
       &:active {
         background: #3d3d3d;
       }

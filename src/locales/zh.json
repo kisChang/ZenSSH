@@ -1,6 +1,6 @@
 {
   "common": {
-    "hello": "通过SSH建立链接，或通过Sftp直接访问目标机器的文件系统。",
+    "hello": "通过SSH建立链接，<br/>或通过Sftp直接访问目标机器的文件系统。",
     "lang": "国际化",
     "cancel": "取消",
     "submit": "保存配置",
@@ -17,6 +17,7 @@
     "setting": "配置",
     "about": "关于",
     "quickConnect": "立即连接",
+    "connectNow": "开始连接",
     "syncSuccess": "同步成功",
     "confirmResetKeyring": "确定重置加密密钥？",
     "confirmDelete": "确定删除此配置？"

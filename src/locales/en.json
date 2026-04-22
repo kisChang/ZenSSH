@@ -1,6 +1,6 @@
 {
   "common": {
-    "hello": "Connect via SSH, or directly connect to your device using FTP to access the file system.",
+    "hello": "Connect via SSH, <br/>or directly connect to your device <br/> using FTP to access the file system.",
     "lang": "Language",
     "cancel": "Cancel",
     "submit": "Save Configuration",
@@ -16,7 +16,8 @@
     "conn": "Connection",
     "setting": "Settings",
     "about": "About",
-    "quickConnect": "Connect Now",
+    "quickConnect": "SSH Connect",
+    "connectNow": "Connect Now",
     "syncSuccess": "Sync Success",
     "confirmResetKeyring": "Reset keyring？",
     "confirmDelete": "Confirm delete config？"
