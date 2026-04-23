@@ -78,15 +78,17 @@
     </el-form-item>
 
     <!-- 端口映射配置   -->
-    <el-form-item>
+    <el-form-item label-width="40px" class="forward-content">
       <template v-slot:label>
         <div>
-          <div>端口转发</div>
-          <el-button size="small" type="primary" @click="addPortForward">添加</el-button>
+          <div>端口</div>
+          <el-button size="small" type="primary" circle @click="addPortForward">
+            <el-icon :size="15"><Plus /></el-icon>
+          </el-button>
         </div>
       </template>
       <div class="forward-item" v-if="config.portForwards && config.portForwards.length">
-        <el-row v-for="pf in config.portForwards" :key="pf.id">
+        <el-row v-for="(pf, index) in config.portForwards" :key="pf.id">
           <el-col :span="7">
             <el-input size="small" v-model="pf.local_host" />
           </el-col>
@@ -102,13 +104,13 @@
           <el-col :span="4">
             <el-input type="number" size="small" v-model="pf.remote_port" />
           </el-col>
-          <el-col :span="1" style="padding: 3px;">
-            <el-icon size="15"><CircleClose /></el-icon>
+          <el-col @click="removePortForward(pf, index)" :span="1" style="padding: 3px;">
+            <el-icon :size="15"><CircleClose /></el-icon>
           </el-col>
         </el-row>
       </div>
       <div v-else style="margin: auto;">
-        <el-empty image-size="50" description="No Port Forward Config." />
+        <el-empty :image-size="50" description="No Port Forward Config." />
       </div>
     </el-form-item>
   </el-form>
@@ -181,12 +183,15 @@ export default {
     this.bastionSessions = useMngStore().configList
   },
   methods: {
-    // port forward
     addPortForward() {
+      if (!this.config.portForwards) {
+        this.config.portForwards = []
+      }
       this.config.portForwards.push({ ...DEFAULT_PF })
     },
-
-
+    removePortForward(pf, index){
+      this.config.portForwards.splice(index, 1)
+    },
     valid(func) {
       this.$refs.form.validate(valid => {
         if (valid) {
@@ -225,9 +230,16 @@ export default {
   :deep(.el-form-item__error) {
     font-size: 10px;
   }
-
+  .forward-content {
+    :deep(.el-form-item__content) {
+      line-height: 28px;
+    }
+  }
   .forward-item {
     min-height: 100px;
+    :deep(.el-icon) {
+      height: 28px;
+    }
   }
 }
 </style>
