@@ -30,14 +30,15 @@
                       class="conn-list-scroll">
           <div v-for="item in tabsStore.connList"
                :key="item.id"
-               class="conn-item"
-               @click="selectConn(item)">
-            <div class="conn-icon-wrap">
+               class="conn-item">
+            <div class="conn-icon-wrap"
+                 @click="selectConn(item)">
               <el-icon v-if="item.state === 0" class="is-loading" :size="24"><Loading /></el-icon>
               <el-icon v-else-if="item.state === 1" color="#67C23A" :size="24"><Link /></el-icon>
               <el-icon v-else-if="item.state === 2" color="#F40" :size="24"><CircleCloseFilled/></el-icon>
             </div>
-            <div class="conn-info">
+            <div class="conn-info"
+                 @click="selectConn(item)">
               <div class="conn-title">{{ item.title }}</div>
 <!--              <div class="conn-state">
                 <span v-if="item.state === 0">连接中...</span>
@@ -51,7 +52,13 @@
                 </div>
               </div>
             </div>
-            <el-icon class="conn-arrow" :size="16"><ArrowRight /></el-icon>
+            <el-button style="background: none;"
+                       @click="closeConn(item)"
+                       :size="16">
+              <el-icon class="conn-arrow" :size="16">
+                <Close/>
+              </el-icon>
+            </el-button>
           </div>
         </el-scrollbar>
       </div>
@@ -189,6 +196,16 @@ export default {
       }
       this.activeTab = to
       this.title = this.$t(titleMap[to])
+    },
+    closeConn(item) {
+      this.$confirm("确认关闭？", {
+        showClose: true,
+        cancelButtonText: '取消',
+        confirmButtonText: '关闭',
+      }).then(() => {
+        this.tabsStore.connectRemove(item.id)
+      }).catch(() => {
+      })
     },
     selectConn: function (item) {
       if (item.state !== 1){
