@@ -27,6 +27,7 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [x] SSH / SFTP / Jump Server
 * [x] Gist Sync for configuration
 * [x] Auto-update (Only PC)
+* [x] Port Forwarding
 * [ ] Text file preview and editing
 * [ ] Shell-specific keyboard with keyboard vibration
 * [ ] Auto Complete

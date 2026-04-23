@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// 链接会话管理（key: session_id）
 static SSH_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SshSession>>>>> =
@@ -412,6 +411,9 @@ pub struct SshSession {
     write: Mutex<Option<russh::ChannelWriteHalf<Msg>>>,
     /// 活跃的端口转发通道
     port_forwards: Arc<Mutex<HashMap<u32, russh::Channel<Msg>>>>,
+
+    shutdown_rx: tokio::sync::watch::Receiver<bool>,
+    shutdown_tx: tokio::sync::watch::Sender<bool>,
 }
 
 impl SshSession {
@@ -491,12 +493,15 @@ impl SshSession {
         channel.request_shell(true).await?;
 
         let (read, write) = channel.split();
+        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
         let session = Self {
             session_id,
             config_id,
             handle: Arc::new(handle),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            shutdown_rx,
+            shutdown_tx
         };
 
         session.init_shell(app, read, on_event).await;
@@ -589,12 +594,15 @@ impl SshSession {
         channel.request_shell(true).await?;
 
         let (read, write) = channel.split();
+        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
         let session = Self {
             session_id,
             config_id,
             handle: handle.into(),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            shutdown_rx,
+            shutdown_tx
         };
         session.init_shell(app, read, on_event).await;
         Ok(session)
@@ -708,9 +716,12 @@ impl SshSession {
         on_event: tauri::ipc::Channel<SshChannelEvent>,
     ) {
         let sess_id_clone = self.session_id.clone();
+        // (covers network disconnect, server close, etc.)
+        let shutdown_tx = self.shutdown_tx.clone();
         tokio::spawn(async move {
             loop {
                 let Some(msg) = read.wait().await else {
+                    let _ = shutdown_tx.send(true);
                     break;
                 };
                 let result = match msg {
@@ -871,71 +882,62 @@ impl SshSession {
         let result_local_host = config.local_host.clone();
         let result_local_port = config.local_port;
 
+        let mut shutdown_rx = self.shutdown_rx.clone();
         tokio::spawn(async move {
             loop {
-                let (local_stream, peer_addr) = match listener.accept().await {
-                    Ok(v) => v,
-                    Err(e) => {
-                        error!("Port forward accept error: {}", e);
-                        continue;
-                    }
-                };
-
-                let handle_clone = handle.clone();
-                let remote_host = config.remote_host.clone();
-                let remote_port = config.remote_port;
-                let local_host = config.local_host.clone();
-                let local_port = config.local_port;
-
-                tokio::spawn(async move {
-                    info!("New connection from {}, forwarding to {}:{}", peer_addr, remote_host, remote_port);
-                    let mut channel = match handle_clone
-                        .channel_open_direct_tcpip(&remote_host, remote_port, &local_host, local_port)
-                        .await
-                    {
-                        Ok(c) => c,
-                        Err(e) => {
-                            error!("Failed to open SSH channel for {}: {}", peer_addr, e);
-                            return;
-                        }
-                    };
-
-                    let (mut local_rx, mut local_tx) = tokio::io::split(local_stream);
-                    let mut buf = vec![0u8; 32768];
-
-                    // Single async block to avoid borrow conflicts on channel
-                    loop {
-                        tokio::select! {
-                            // Read from local TCP → write to SSH channel
-                            n = local_rx.read(&mut buf) => {
-                                match n {
-                                    Ok(0) => break, // EOF
-                                    Ok(n) => {
-                                        if let Err(e) = channel.data(&buf[..n]).await {
-                                            error!("Channel write error: {}", e);
-                                            break;
-                                        }
-                                    }
-                                    Err(e) => { error!("Local read error: {}", e); break; }
-                                }
-                            }
-                            // Read from SSH channel → write to local TCP
-                            msg = channel.wait() => {
-                                match msg {
-                                    Some(ChannelMsg::Data { data }) => {
-                                        if local_tx.write_all(&data).await.is_err() {
-                                            break;
-                                        }
-                                    }
-                                    Some(ChannelMsg::Eof) | None => break,
-                                    Some(_) => continue,
-                                }
-                            }
+                tokio::select! {
+                    _ = shutdown_rx.changed() => {
+                        if *shutdown_rx.borrow() {
+                            info!("Stopping listener due to SSH disconnect");
+                            break;
                         }
                     }
-                    let _ = channel.close().await;
-                });
+                    res = listener.accept() => {
+                        let (mut local_stream, peer_addr) = match res {
+                            Ok(v) => v,
+                            Err(e) => {
+                                error!("accept error: {}", e);
+                                continue;
+                            }
+                        };
+
+                        let handle = handle.clone();
+                        let remote_host = config.remote_host.clone();
+                        let remote_port = config.remote_port;
+                        let local_host = config.local_host.clone();
+                        let local_port = config.local_port;
+
+                        tokio::spawn(async move {
+                            let channel = match handle
+                                .channel_open_direct_tcpip(
+                                    &remote_host,
+                                    remote_port,
+                                    &local_host,
+                                    local_port
+                                )
+                                .await
+                            {
+                                Ok(c) => c,
+                                Err(e) => {
+                                    error!("channel open failed: {}", e);
+                                    return;
+                                }
+                            };
+
+                            let mut ssh_stream = channel.into_stream();
+
+                            if let Err(e) = tokio::io::copy_bidirectional(
+                                &mut local_stream,
+                                &mut ssh_stream
+                            ).await
+                            {
+                                error!("copy error for {}: {}", peer_addr, e);
+                            }
+                        });
+                    }
+                }
             }
+            info!("Listener exited");
         });
 
         Ok(PortForwardResult {
@@ -1003,13 +1005,17 @@ impl SshSession {
     }
 
     pub async fn close(&self) -> Result<()> {
+        let _ = self.shutdown_tx.send(true);
         let channel = {
             let mut guard = self.write.lock().unwrap();
             guard.take()
         };
         if let Some(channel) = channel {
-            channel.close().await?;
+            let _ = channel.close().await;
         }
+        let _ = self.handle
+            .disconnect(Disconnect::ByApplication, "user close", "en")
+            .await;
         Ok(())
     }
 }
