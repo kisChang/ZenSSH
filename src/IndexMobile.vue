@@ -1,6 +1,6 @@
 <template>
   <div class="hosts-page">
-    <header v-if="!titleHidden" class="header">
+    <header class="header">
       <div class="left">
         <span class="title"></span>
       </div>
@@ -15,12 +15,40 @@
     <main class="content">
       <mobile-host v-show="activeTab === 'host'" ref="hostMng"/>
 
-      <terminal-tabs ref="terminalTabs" v-show="activeTab === 'conn'" :active="activeTab === 'conn'"/>
+      <!-- 移动端连接列表 -->
+      <div v-show="activeTab === 'conn'" class="conn-list-view">
+        <el-scrollbar class="conn-list-scroll">
+          <div v-for="item in tabsStore.connList"
+               :key="item.id"
+               class="conn-item"
+               @click="selectConn(item)">
+            <div class="conn-icon-wrap">
+              <el-icon v-if="item.state === 0" class="is-loading" :size="24"><Loading /></el-icon>
+              <el-icon v-else-if="item.state === 1" color="#67C23A" :size="24"><Link /></el-icon>
+              <el-icon v-else-if="item.state === 2" color="#F40" :size="24"><CircleCloseFilled/></el-icon>
+            </div>
+            <div class="conn-info">
+              <div class="conn-title">{{ item.title }}</div>
+              <div class="conn-state">
+                <span v-if="item.state === 0">连接中...</span>
+                <span v-else-if="item.state === 1">已连接</span>
+                <span v-else-if="item.state === 2">已断开</span>
+              </div>
+            </div>
+            <el-icon class="conn-arrow" :size="16"><ArrowRight /></el-icon>
+          </div>
+        </el-scrollbar>
+      </div>
 
+      <!-- 移动端终端页面 -->
+      <terminal-tabs ref="terminalTabs"
+                     class="terminal-mobile"
+                     v-show="showTerminal"
+                     :active="showTerminal"/>
       <mobile-setting v-show="activeTab === 'setting'"/>
     </main>
 
-    <footer class="tabbar" v-if="!titleHidden">
+    <footer class="tabbar">
       <div class="tab" @click="toggleTab('host')" :class="{active : activeTab === 'host'}">
         <el-icon :size="20"><Platform /></el-icon>
         <span>{{ $t('main.host') }}</span>
@@ -50,21 +78,21 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
-import {Loading} from "@element-plus/icons-vue";
+import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight} from "@element-plus/icons-vue";
 
 export default {
   name: "IndexMobile",
   props: {
     isLoading: false,
   },
-  components: {Loading, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
   data() {
     const tabsStore = useTabsStore();
     return {
       activeTab: 'host',
       title: '',
-      titleHidden: false,
       tabsStore: tabsStore,
+      showTerminal: false,
     }
   },
   mounted() {
@@ -72,14 +100,10 @@ export default {
     this.$bus.on('mobile-connect-ssh', (config) => {
       this.toggleTab('conn')
       this.tabsStore.connectConfig(config, 'connect')
-      this.titleHidden =
-          this.tabsStore.connList.length > 0;
     })
     this.$bus.on('mobile-connect-sftp', (config) => {
       this.toggleTab('conn')
       this.tabsStore.connectConfig(config, 'sftp')
-      this.titleHidden =
-          this.tabsStore.connList.length > 0;
     })
     this.$bus.on('show-quick-connect', () => {
       this.toggleTab('host')
@@ -91,8 +115,18 @@ export default {
       this.toggleTab('host')
     })
     this.$bus.on('tab-only-one', () => {
-      this.titleHidden = false
+      this.showTerminal = false
     })
+
+    // 监听连接状态变化，连接成功时自动进入TerminalTabs
+    this.$watch(
+      () => this.tabsStore.connList.map(c => c.state),
+      (states) => {
+        if (states.some(s => s === 1)) {
+          this.showTerminal = true
+        }
+      }
+    )
 
     // 检查电池优化选项
     checkBatteryOptimizationStatus().then(status => {
@@ -104,28 +138,33 @@ export default {
     })
 
     if (isMobile()) {
-      // 处理安卓端返回事件的支持
-      onBackButtonPress(() => {
-        if (this.activeTab === 'host') {
-          this.$confirm("确认退出？", {showClose: false}).then(() => {
-            exit(0)
-          }).catch(() => {})
-        } else if (this.activeTab === 'conn'){
+      onBackButtonPress(this.onBackButtonPress)
+    }
+  },
+  methods: {
+    // 处理安卓端返回事件的支持
+    onBackButtonPress() {
+      if (this.activeTab === 'host') {
+        this.$confirm("确认退出？", {showClose: false}).then(() => {
+          exit(0)
+        }).catch(() => {})
+      } else if (this.activeTab === 'conn'){
+        if (this.showTerminal) {
+          // 从终端页面返回，先回到连接列表
           this.$refs.terminalTabs.onBackButtonPress().then(rv => {
             if (rv) {
-              this.toggleTab('host')
+              this.showTerminal = false
             }
           })
         } else {
+          // 从连接列表返回到主机列表
           this.toggleTab('host')
+          this.showTerminal = false
         }
-      })
-    }
-
-    //TODO 测试代码
-    // this.toggleTab('setting')
-  },
-  methods: {
+      } else {
+        this.toggleTab('host')
+      }
+    },
     toggleTab: function (to) {
       const titleMap = {
         'host': "main.host",
@@ -134,12 +173,15 @@ export default {
       }
       this.activeTab = to
       this.title = this.$t(titleMap[to])
-      this.titleHidden = false
-      if (to === 'conn') {
-        // 有连接时隐藏全部信息
-        this.titleHidden =
-            this.tabsStore.connList.length > 0;
-      }
+    },
+    selectConn: function (item) {
+      this.showTerminal = true
+      // 激活对应Tab
+      this.$nextTick(() => {
+        if (this.$refs.terminalTabs) {
+          this.$refs.terminalTabs.activeTab = item.id
+        }
+      })
     },
   }
 };
@@ -159,10 +201,20 @@ $text-sub: #94a3b8;
   right: 0;
   background: $bg;
   color: $text-main;
+  display: flex;
+  flex-direction: column;
+}
+:deep(.terminal-mobile) {
+  z-index: 1;
+  position: fixed;
+  top: env(safe-area-inset-top);
+  bottom: env(safe-area-inset-bottom);
+  left: 0;
+  right: 0;
 }
 
-/* Header */
 .header {
+  flex-shrink: 0;
   height: 56px;
   display: flex;
   align-items: center;
@@ -190,6 +242,9 @@ $text-sub: #94a3b8;
 }
 
 .content {
+  flex: 1;
+  overflow: hidden;
+
   h2 {
     margin-top: 10vh;
     font-size: 20px;
@@ -203,18 +258,82 @@ $text-sub: #94a3b8;
     line-height: 1.5;
   }
 
+  /* 连接列表样式 */
+  .conn-list-view {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    .empty-conn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      color: $text-sub;
+      font-size: 16px;
+    }
+    .conn-list-scroll {
+      flex: 1;
+      padding: 8px 12px;
+    }
+    .conn-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: $card;
+      border-radius: 8px;
+      &:active {
+        background: #334155;
+      }
+    }
+    .conn-icon-wrap {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .conn-info {
+      flex: 1;
+      margin-left: 12px;
+      min-width: 0;
+      .conn-title {
+        font-size: 15px;
+        font-weight: 500;
+        color: $text-main;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .conn-state {
+        font-size: 12px;
+        color: $text-sub;
+        margin-top: 2px;
+      }
+    }
+    .conn-arrow {
+      color: $text-sub;
+      flex-shrink: 0;
+    }
+  }
 }
 
 .tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom);
-
+  flex-shrink: 0;
   height: 60px;
   display: flex;
   background: #020617;
   border-top: 1px solid #1e293b;
+  transition: height 0.2s;
+
+  &.hidden {
+    height: 0;
+    overflow: hidden;
+    border-top: none;
+  }
 
   .tab {
     flex: 1;

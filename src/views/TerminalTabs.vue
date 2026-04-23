@@ -22,7 +22,7 @@
           v-if="item.type === 'welcome'"
           image="/logo.png"
           description=" ">
-        <div slot="description">{{ $t('common.hello') }}</div>
+        <div slot="description" v-html="$t('common.hello')"></div>
         <el-button style="margin-top: 30px;" type="primary" @click="showQuickConn">{{ $t('main.quickConnect') }}</el-button>
       </el-empty>
 
@@ -38,7 +38,7 @@
     <el-tab-pane v-if="isMobile && tabs.length <= 0" :closable="false" label="Welcome" name="welcome">
       <el-empty image="/logo.png"
                 description=" ">
-        <div slot="description">{{ $t('common.hello') }}</div>
+        <div slot="description" v-html="$t('common.hello')"></div>
         <el-button style="margin-top: 30px;" type="primary" @click="showQuickConn">{{ $t('main.quickConnect') }}</el-button>
       </el-empty>
     </el-tab-pane>
@@ -70,7 +70,6 @@ import { keepScreenOn } from "tauri-plugin-keep-screen-on-api";
 import Terminal from "@/subs/Terminal.vue";
 import SftpFileBrowser from "@/subs/SftpFileBrowser.vue";
 import {invoke} from "@tauri-apps/api/core";
-import { onBackButtonPress } from "@tauri-apps/api/app";
 import {useTabsStore} from "@/store.js";
 import SettingForm from "@/subs/SettingForm.vue";
 import {isMobile} from "@/commons.js";
