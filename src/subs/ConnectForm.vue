@@ -23,7 +23,7 @@
 
     <!-- 密码认证 -->
     <template v-if="config.authType === 'password'">
-      <el-form-item v-if="config.configId" :label="$t('connect.password')" prop="password">
+      <el-form-item v-if="config.configId" :label="$t('connect.password')" prop="passwordNew">
         <el-input v-model="config.passwordNew" type="password" :placeholder="$t('connect.passwordNew_placeholder')" show-password />
       </el-form-item>
       <el-form-item v-else :label="$t('connect.password')" prop="password">
@@ -90,19 +90,19 @@
       <div class="forward-item" v-if="config.portForwards && config.portForwards.length">
         <el-row v-for="(pf, index) in config.portForwards" :key="pf.id">
           <el-col :span="7">
-            <el-input size="small" v-model="pf.local_host" />
+            <el-input size="small" v-model="pf.localHost" />
           </el-col>
           <el-col :span="4">
-            <el-input type="number" size="small" v-model="pf.local_port" />
+            <el-input type="number" size="small" v-model.number="pf.localPort" />
           </el-col>
           <el-col :span="1">
             <el-icon style="rotate: 90deg"><Sort /></el-icon>
           </el-col>
           <el-col :span="7">
-            <el-input size="small" v-model="pf.remote_host" />
+            <el-input size="small" v-model="pf.remoteHost" />
           </el-col>
           <el-col :span="4">
-            <el-input type="number" size="small" v-model="pf.remote_port" />
+            <el-input type="number" size="small" v-model.number="pf.remotePort" />
           </el-col>
           <el-col @click="removePortForward(pf, index)" :span="1" style="padding: 3px;">
             <el-icon :size="15"><CircleClose /></el-icon>
@@ -120,10 +120,10 @@
 import {useMngStore} from "@/store.js";
 
 export const DEFAULT_PF = {
-  local_host: "localhost",
-  local_port: 0,
-  remote_host: "localhost",
-  remote_port: 0,
+  localHost: "localhost",
+  localPort: 0,
+  remoteHost: "localhost",
+  remotePort: 0,
 }
 export const DEFAULT_CONFIG = {
   name: '',
@@ -159,6 +159,7 @@ export default {
         port: [ { required: true, message: this.$t('connect.port_message'),trigger: 'blur' } ],
         username: [ { required: true, message: this.$t('connect.username_message'),trigger: 'blur' } ],
         password: [ { required: true, message: this.$t('connect.password_message'),trigger: 'blur' } ],
+        passwordNew: [ { required: true, message: this.$t('connect.password_message'),trigger: 'blur' } ],
       }
     }
   },

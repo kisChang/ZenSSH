@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// 链接会话管理（key: session_id）
 static SSH_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SshSession>>>>> =
@@ -50,6 +51,9 @@ pub struct SshConfig {
     pub keepalive_interval: u64,
     /// 跳板机配置
     pub bastion_config_id: Option<String>,
+    /// 端口转发配置列表
+    #[serde(default)]
+    pub port_forwards: Vec<PortForwardConfig>,
 }
 
 impl Default for SshConfig {
@@ -66,6 +70,7 @@ impl Default for SshConfig {
             timeout: 30,
             keepalive_interval: 30,
             bastion_config_id: None,
+            port_forwards: Vec::new(),
         }
     }
 }
@@ -77,11 +82,11 @@ pub struct PortForwardConfig {
     /// 本地监听地址
     pub local_host: String,
     /// 本地监听端口
-    pub local_port: u16,
+    pub local_port: u32,
     /// 远程目标地址
     pub remote_host: String,
     /// 远程目标端口
-    pub remote_port: u16,
+    pub remote_port: u32,
 }
 
 /// 端口转发结果
@@ -93,7 +98,7 @@ pub struct PortForwardResult {
     /// 本地监听地址
     pub local_host: String,
     /// 本地监听端口
-    pub local_port: u16,
+    pub local_port: u32,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -297,9 +302,9 @@ pub async fn ssh_window_change(
 pub async fn ssh_port_forward(
     session_id: &str,
     local_host: &str,
-    local_port: u16,
+    local_port: u32,
     remote_host: &str,
-    remote_port: u16,
+    remote_port: u32,
 ) -> Result<PortForwardResult, String> {
     let sess: Option<Arc<SshSession>> = {
         let map = SSH_MAP.lock().unwrap();
@@ -616,7 +621,7 @@ impl SshSession {
             .success())
     }
 
-    /// 通过配置创建连接（主入口）
+    /// 使用配置创建连接（主入口）
     pub async fn connect_with_config(
         app: AppHandle,
         config: SshConfig,
@@ -629,7 +634,7 @@ impl SshSession {
     ) -> Result<Self> {
         let on_event_clone = on_event.clone();
         // 如果有跳板机配置，使用跳板机连接
-        match bastion_config {
+        let session = match bastion_config {
             Some(bastion_config) => {
                 match Self::connect_via_bastion(
                     app,
@@ -672,7 +677,27 @@ impl SshSession {
                     }
                 }
             }
+        }?;
+
+        // 建立端口映射连接
+        for pf_config in &config.port_forwards {
+            let pf_result = session.local_port_forward(pf_config.clone()).await;
+            match pf_result {
+                Ok(result) => {
+                    info!(
+                        "Port forward established: {}:{} -> {}:{}",
+                        result.local_host, result.local_port, pf_config.remote_host, pf_config.remote_port
+                    );
+                }
+                Err(e) => {
+                    error!(
+                        "Port forward failed: {}:{} -> {}:{}, error: {:?}",
+                        pf_config.local_host, pf_config.local_port, pf_config.remote_host, pf_config.remote_port, e
+                    );
+                }
+            }
         }
+        Ok(session)
     }
 
     /// 启动事件处理循环
@@ -839,29 +864,84 @@ impl SshSession {
 
     /// 端口转发（本地端口转发）
     pub async fn local_port_forward(&self, config: PortForwardConfig) -> Result<PortForwardResult> {
-        let channel = self
-            .handle
-            .channel_open_direct_tcpip(
-                &config.remote_host,
-                config.remote_port as u32,
-                &config.local_host,
-                config.local_port as u32,
-            )
-            .await?;
+        let local_addr = format!("{}:{}", config.local_host, config.local_port);
+        let listener = tokio::net::TcpListener::bind(&local_addr).await?;
 
-        let channel_id: u32 = channel.id().into();
+        let handle = self.handle.clone();
+        let result_local_host = config.local_host.clone();
+        let result_local_port = config.local_port;
 
-        // 保存通道引用
-        {
-            let mut forwards = self.port_forwards.lock().unwrap();
-            // TODO 保持通道 channel 的数据通讯
-            forwards.insert(channel_id, channel);
-        }
+        tokio::spawn(async move {
+            loop {
+                let (local_stream, peer_addr) = match listener.accept().await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("Port forward accept error: {}", e);
+                        continue;
+                    }
+                };
+
+                let handle_clone = handle.clone();
+                let remote_host = config.remote_host.clone();
+                let remote_port = config.remote_port;
+                let local_host = config.local_host.clone();
+                let local_port = config.local_port;
+
+                tokio::spawn(async move {
+                    info!("New connection from {}, forwarding to {}:{}", peer_addr, remote_host, remote_port);
+                    let mut channel = match handle_clone
+                        .channel_open_direct_tcpip(&remote_host, remote_port, &local_host, local_port)
+                        .await
+                    {
+                        Ok(c) => c,
+                        Err(e) => {
+                            error!("Failed to open SSH channel for {}: {}", peer_addr, e);
+                            return;
+                        }
+                    };
+
+                    let (mut local_rx, mut local_tx) = tokio::io::split(local_stream);
+                    let mut buf = vec![0u8; 32768];
+
+                    // Single async block to avoid borrow conflicts on channel
+                    loop {
+                        tokio::select! {
+                            // Read from local TCP → write to SSH channel
+                            n = local_rx.read(&mut buf) => {
+                                match n {
+                                    Ok(0) => break, // EOF
+                                    Ok(n) => {
+                                        if let Err(e) = channel.data(&buf[..n]).await {
+                                            error!("Channel write error: {}", e);
+                                            break;
+                                        }
+                                    }
+                                    Err(e) => { error!("Local read error: {}", e); break; }
+                                }
+                            }
+                            // Read from SSH channel → write to local TCP
+                            msg = channel.wait() => {
+                                match msg {
+                                    Some(ChannelMsg::Data { data }) => {
+                                        if local_tx.write_all(&data).await.is_err() {
+                                            break;
+                                        }
+                                    }
+                                    Some(ChannelMsg::Eof) | None => break,
+                                    Some(_) => continue,
+                                }
+                            }
+                        }
+                    }
+                    let _ = channel.close().await;
+                });
+            }
+        });
 
         Ok(PortForwardResult {
-            channel_id,
-            local_host: config.local_host,
-            local_port: config.local_port,
+            channel_id: 0,
+            local_host: result_local_host,
+            local_port: result_local_port,
         })
     }
 
