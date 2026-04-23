@@ -17,7 +17,17 @@
 
       <!-- 移动端连接列表 -->
       <div v-show="activeTab === 'conn'" class="conn-list-view">
-        <el-scrollbar class="conn-list-scroll">
+        <el-empty v-if="tabsStore.connList <= 0"
+                  image="/logo.png"
+                  description=" ">
+          <div slot="description" v-html="$t('common.hello')"></div>
+          <el-button style="margin-top: 30px;" type="primary" @click="toggleTab('host')">
+            {{ $t('main.quickConnect') }}
+          </el-button>
+        </el-empty>
+
+        <el-scrollbar v-else
+                      class="conn-list-scroll">
           <div v-for="item in tabsStore.connList"
                :key="item.id"
                class="conn-item"

@@ -35,14 +35,6 @@
       <sftp-file-browser :ref="'sftp_' + item.sessionId" v-else-if="item.type === 'sftp'" :session="item"/>
     </el-tab-pane>
 
-    <el-tab-pane v-if="isMobile && tabs.length <= 0" :closable="false" label="Welcome" name="welcome">
-      <el-empty image="/logo.png"
-                description=" ">
-        <div slot="description" v-html="$t('common.hello')"></div>
-        <el-button style="margin-top: 30px;" type="primary" @click="showQuickConn">{{ $t('main.quickConnect') }}</el-button>
-      </el-empty>
-    </el-tab-pane>
-
     <el-dropdown
         v-if="!isMobile"
         ref="dropdownRef"
