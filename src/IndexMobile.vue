@@ -175,6 +175,19 @@ export default {
       this.title = this.$t(titleMap[to])
     },
     selectConn: function (item) {
+      if (item.state !== 1){
+        this.$confirm("链接已断开，尝试重连或者关闭？", {
+          showClose: true,
+          cancelButtonText: '重连',
+          confirmButtonText: '关闭',
+        }).then(() => {
+          this.tabsStore.connectRemove(item.id)
+        }).catch(() => {
+          this.tabsStore.connectRemove(item.id)
+          this.tabsStore.connectConfig(item.config, 'connect')
+        })
+        return
+      }
       this.showTerminal = true
       // 激活对应Tab
       this.$nextTick(() => {

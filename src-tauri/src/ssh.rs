@@ -722,6 +722,14 @@ impl SshSession {
             loop {
                 let Some(msg) = read.wait().await else {
                     let _ = shutdown_tx.send(true);
+                    let _ = app.emit(
+                        "ssh_close",
+                        SshClosePayload {
+                            exit_status: 255,
+                            session_id: sess_id_clone.clone().into(),
+                            message: "connect error".into(),
+                        },
+                    );
                     break;
                 };
                 let result = match msg {
