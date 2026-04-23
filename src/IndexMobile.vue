@@ -39,10 +39,16 @@
             </div>
             <div class="conn-info">
               <div class="conn-title">{{ item.title }}</div>
-              <div class="conn-state">
+<!--              <div class="conn-state">
                 <span v-if="item.state === 0">连接中...</span>
                 <span v-else-if="item.state === 1">已连接</span>
                 <span v-else-if="item.state === 2">已断开</span>
+              </div>-->
+              <div v-if="item.config?.portForwards?.length" class="port-forward-list">
+                <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
+                  <el-icon :size="12" color="#409EFF"><Paperclip /></el-icon>
+                  <span class="pf-text">L:{{ pf.localHost }}:{{ pf.localPort }} → R:{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
+                </div>
               </div>
             </div>
             <el-icon class="conn-arrow" :size="16"><ArrowRight /></el-icon>
@@ -88,14 +94,14 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
-import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight} from "@element-plus/icons-vue";
+import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip} from "@element-plus/icons-vue";
 
 export default {
   name: "IndexMobile",
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -340,6 +346,19 @@ $text-sub: #94a3b8;
     .conn-arrow {
       color: $text-sub;
       flex-shrink: 0;
+    }
+    .port-forward-list {
+      margin-top: 4px;
+      .port-forward-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        .pf-text {
+          font-size: 11px;
+          color: #409EFF;
+          font-family: monospace;
+        }
+      }
     }
   }
 }
