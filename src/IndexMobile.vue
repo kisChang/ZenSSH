@@ -47,17 +47,16 @@
               </div>-->
               <div v-if="item.config?.portForwards?.length" class="port-forward-list">
                 <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
-                  <el-icon :size="12" color="#409EFF"><Paperclip /></el-icon>
-                  <span class="pf-text">L:{{ pf.localHost }}:{{ pf.localPort }} → R:{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
+                  <el-icon :size="10" color="#409EFF"><Paperclip /></el-icon>
+                  <span class="pf-text">{{ pf.localHost }}:{{ pf.localPort }}→{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
                 </div>
               </div>
             </div>
-            <el-button style="background: none;"
-                       @click="closeConn(item)"
-                       :size="16">
-              <el-icon class="conn-arrow" :size="16">
-                <Close/>
-              </el-icon>
+            <el-button style="background: none;padding: 15px;"
+                       size="small"
+                       circle
+                       @click="closeConn(item)">
+              <el-icon class="conn-arrow" :size="15"><Close/></el-icon>
             </el-button>
           </div>
         </el-scrollbar>
@@ -364,7 +363,7 @@ $text-sub: #94a3b8;
         align-items: center;
         gap: 4px;
         .pf-text {
-          font-size: 11px;
+          font-size: 8px;
           color: #409EFF;
           font-family: monospace;
         }
