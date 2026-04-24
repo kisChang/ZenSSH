@@ -24,41 +24,46 @@
       </key-btn>
     </div>
 
-    <!-- 数字行 -->
-    <div v-if="showKeyboard" class="row">
-      <key-btn v-for="key in currentNumbers"
-               :key="key"
-               :code="key" :title="key"
-               @press="onDown"/>
-    </div>
+    <!-- 可折叠区域（数字行 + 字母区 + 底部功能行） -->
+    <Transition name="slide">
+      <div v-show="showKeyboard" class="keyboard-body">
+        <!-- 数字行 -->
+        <div class="row">
+          <key-btn v-for="key in currentNumbers"
+                   :key="key"
+                   :code="key" :title="key"
+                   @press="onDown"/>
+        </div>
 
-    <!-- 字母区 -->
-    <div v-if="showKeyboard" class="row" v-for="row in currentLetters" :key="row.join('')">
-      <key-btn v-for="key in row"
-               :disabled="key === ''"
-               :class="[keyClass(key)]"
-               :key="key"
-               :code="key" :title="key"
-               @press="onDown"/>
-    </div>
+        <!-- 字母区 -->
+        <div class="row" v-for="row in currentLetters" :key="row.join('')">
+          <key-btn v-for="key in row"
+                   :disabled="key === ''"
+                   :class="[keyClass(key)]"
+                   :key="key"
+                   :code="key" :title="key"
+                   @press="onDown"/>
+        </div>
 
-    <!-- 底部功能行 -->
-    <div v-if="showKeyboard" class="row">
-      <key-btn :class="[keyClass('Ctrl')]" :code="'Ctrl'" title="Ctrl" @press="onDown"/>
+        <!-- 底部功能行 -->
+        <div class="row">
+          <key-btn :class="[keyClass('Ctrl')]" :code="'Ctrl'" title="Ctrl" @press="onDown"/>
 
 
-      <key-btn :code="'Symbol'" title="." @press="toggleSymbol">
-        {{ mode === 'symbol' ? 'ABC' : '?123' }}
-      </key-btn>
+          <key-btn :code="'Symbol'" title="." @press="toggleSymbol">
+            {{ mode === 'symbol' ? 'ABC' : '?123' }}
+          </key-btn>
 
-      <key-btn style="flex: 3;"
-               :code="' '"
-               title="Space" @press="onDown"/>
+          <key-btn style="flex: 3;"
+                   :code="' '"
+                   title="Space" @press="onDown"/>
 
-      <key-btn style="flex: 2;"
-               :class="[keyClass('Enter')]"
-               :code="'Enter'" title="Enter" @press="onDown"/>
-    </div>
+          <key-btn style="flex: 2;"
+                   :class="[keyClass('Enter')]"
+                   :code="'Enter'" title="Enter" @press="onDown"/>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -148,7 +153,9 @@ export default {
     toggleShown() {
       this.showKeyboard = !this.showKeyboard
       this.onceVibrate()
-      this.$emit('toggleKeyboard')
+      setTimeout(() => {
+        this.$emit('toggleKeyboard')
+      }, 300)
     },
 
     onceVibrate() {
@@ -255,6 +262,23 @@ export default {
   display: flex;
   justify-content: center;
   margin-bottom: 4px;
+}
+
+/* slide 过渡动画 */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.25s ease-in-out;
+  overflow: hidden;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
+.keyboard-body {
+  overflow: hidden;
 }
 
 button {

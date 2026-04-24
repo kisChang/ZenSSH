@@ -48,7 +48,7 @@ export default {
     return {
       tabStore: tabStore,
       closed: false,
-      term: null, termStyle: { bottom: 0, height: '100vh' },
+      term: null, termStyle: { height: 'auto' },
       enableKeyboard: false,
       currenLine: "", showAutocomplete: {show: false, left: '100px', top: '100px'},
     }
@@ -243,12 +243,12 @@ export default {
       if (!this.term || !this.fitAddon) return
       const footerHeight = (this.enableKeyboard ? 350 : 0);
       // Terminal 距离底部
-      this.termStyle.bottom = footerHeight + 'px';
       this.termStyle.height = footerHeight + 'px';
       this.$nextTick(async () => {
         this.term.focus()
         this.fitAddon.fit()
         this.term.scrollToBottom()
+        this.$refs.terminal.scroll()
       })
     },
 
@@ -439,6 +439,7 @@ export default {
 .my-terminal {
   flex: 1;
   background: #000000;
+  z-index: 1;
   :deep(.xterm-decoration-overview-ruler) {
     display: none !important;
   }
