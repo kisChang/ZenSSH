@@ -164,6 +164,19 @@ pub async fn ssh_sftp_read_cancel(task_id: String) -> Result<(), String> {
 }
 
 
+/// 读取文本文件内容，直接返回字符串
+#[tauri::command]
+pub async fn ssh_sftp_read_text(
+    session_id: &str,
+    file_path: &str,
+) -> Result<String, String> {
+    let sftp = ssh_get_sftp(session_id).await?;
+    let mut remote_file = sftp.open(file_path).await.map_err(|e| e.to_string())?;
+    let mut content = String::new();
+    remote_file.read_to_string(&mut content).await.map_err(|e| e.to_string())?;
+    Ok(content)
+}
+
 #[tauri::command]
 pub async fn ssh_sftp_write(
     session_id: &str,

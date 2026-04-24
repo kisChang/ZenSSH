@@ -36,6 +36,9 @@
 <!--          <el-alert title="预览" type="primary" show-icon :closable="false" @click="handlePreview">
             <template #icon><View /></template>
           </el-alert>-->
+          <el-alert title="编辑" type="primary" show-icon :closable="false" @click="handleEdit">
+            <template #icon><Edit /></template>
+          </el-alert>
           <el-alert title="下载" type="primary" show-icon :closable="false" @click="handleDownload">
             <template #icon><Download /></template>
           </el-alert>
@@ -61,6 +64,14 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 文本编辑器浮层 -->
+    <TextEditor
+        v-if="editingFile"
+        :session="session"
+        :file-path="editingFile"
+        @close="closeEditor"
+    />
   </div>
 </template>
 
@@ -70,8 +81,11 @@ import {writeFile, exists, create, readFile} from '@tauri-apps/plugin-fs';
 import {Channel, invoke} from '@tauri-apps/api/core'
 import {useTabsStore} from "@/store.js";
 import {genId, sep} from "@/commons.js";
+import TextEditor from "./TextEditor.vue";
+import { Edit, Download } from '@element-plus/icons-vue';
 
 export default {
+  components: { TextEditor, Edit, Download },
   props: {
     session: {
       type: Object,
@@ -105,6 +119,7 @@ export default {
       currentDir: '.',
       files: [],
       activeFile: null,
+      editingFile: null,
       downloadShow: false, downloadProgress: 0,
     }
   },
@@ -127,6 +142,12 @@ export default {
   },
   methods: {
     onBackButtonPress() {
+      if (this.editingFile) {
+        this.$confirm('正在编辑文件，是否关闭编辑器？', {showClose: false}).then(() => {
+          this.editingFile = null;
+        }).catch(() => {});
+        return false;
+      }
       if (this.downloadShow) {
         this.handleDownloadCancel()
         return false
@@ -216,6 +237,14 @@ export default {
           this.downloadTaskId = null
         })
       }
+    },
+    handleEdit() {
+      const filePath = this.activeFile;
+      this.activeFile = null;
+      this.editingFile = filePath;
+    },
+    closeEditor() {
+      this.editingFile = null;
     },
     async handleDelete() {
       this.$confirm("确认删除该文件？", {showClose: false}).then(rv => {

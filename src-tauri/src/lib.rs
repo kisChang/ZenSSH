@@ -45,6 +45,7 @@ pub fn run() {
         sftp::ssh_sftp_listdir,
         sftp::ssh_sftp_read,
         sftp::ssh_sftp_read_cancel,
+        sftp::ssh_sftp_read_text,
         sftp::ssh_sftp_write,
         sftp::ssh_sftp_mkdir,
         sftp::ssh_sftp_remove_dir,
