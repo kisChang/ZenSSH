@@ -2,8 +2,10 @@
   <div class="terminal-container" ref="container">
     <div ref="terminal" class="my-terminal" :style="termStyle"></div>
 
-    <div v-if="enableKeyboard" class="footer-keyboard" v-show="showKeyboard">
-      <keyboard @press="pressKeyboard" @click.stop="()=>{}"/>
+    <div v-show="enableKeyboard" class="footer-keyboard">
+      <keyboard @press="pressKeyboard"
+                @toggleKeyboard="updateTerminalSize"
+                @click.stop="()=>{}"/>
     </div>
 
     <div v-if="showAutocomplete.show" class="show-autocomplete" :style="showAutocomplete">
@@ -47,13 +49,8 @@ export default {
       tabStore: tabStore,
       closed: false,
       term: null, termStyle: { bottom: 0, height: '100vh' },
-      showKeyboard: true, enableKeyboard: false,
+      enableKeyboard: false,
       currenLine: "", showAutocomplete: {show: false, left: '100px', top: '100px'},
-    }
-  },
-  watch: {
-    showKeyboard(){
-      this.updateTerminalSize()
     }
   },
   mounted() {
@@ -65,6 +62,7 @@ export default {
       this.$bus.on("ssh_close_" + this.sessionId, () => {
         this.disconnect();
       });
+      this.updateTerminalSize();
     }).catch(err => {
       this.disconnect();
       this.$notify({
@@ -189,12 +187,6 @@ export default {
       this.updateTerminalSize()
       // 处理触摸事件
       this.bindTouchEvents()
-      // 加载现有端口转发
-      await this.loadPortForwards();
-    },
-
-    async loadPortForwards(){
-      // TODO 连接后如何处理端口转发
     },
 
     pressKeyboard(code) {
@@ -249,7 +241,7 @@ export default {
 
     updateTerminalSize() {
       if (!this.term || !this.fitAddon) return
-      const footerHeight = (this.showKeyboard && this.enableKeyboard ? 350 : 0);
+      const footerHeight = (this.enableKeyboard ? 350 : 0);
       // Terminal 距离底部
       this.termStyle.bottom = footerHeight + 'px';
       this.termStyle.height = footerHeight + 'px';
@@ -319,7 +311,7 @@ export default {
       const x = clientX
       // 调一些位置，方便用户看到
       let y
-      if (this.showKeyboard && this.enableKeyboard) {
+      if (this.enableKeyboard) {
         y = clientY - 120
       } else {
         y = clientY - 120
@@ -378,9 +370,6 @@ export default {
         } else {
           this.endSelect = this.startSelect
         }
-      } else {
-        // 仅在未触发长按时才触发这个事件
-        this.showKeyboard = !this.showKeyboard
       }
     },
     onTouchMove (event) {
@@ -456,7 +445,7 @@ export default {
 }
 
 .footer-keyboard {
-  height: 330px;
+  height: auto;
   background: #222;
   flex-shrink: 0;
   transition: max-height 0.3s ease;

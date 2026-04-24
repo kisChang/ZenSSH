@@ -9,6 +9,7 @@
       <key-btn :code="'\x1b[A'" title="↑" @press="onDown"/>
       <key-btn :code="'\x03'" title="⌃C" @press="onDown"/>
       <key-btn :code="'~'" title="~" @press="onDown"/>
+      <key-btn :code="'&'" title="&" @press="onDown"/>
     </div>
     <div class="row">
       <key-btn :code="'\x09'" title="Tab" @press="onDown"/>
@@ -18,10 +19,13 @@
       <key-btn :code="'\x1b[B'" title="↓" @press="onDown"/>
       <key-btn :code="'\x1b[C'" title="→" @press="onDown"/>
       <key-btn :code="'.'" title="." @press="onDown"/>
+      <key-btn @press="toggleShown">
+        <el-icon :style="{rotate: showKeyboard ? '90deg' : '-90deg' }"><DArrowRight /></el-icon>
+      </key-btn>
     </div>
 
     <!-- 数字行 -->
-    <div class="row">
+    <div v-if="showKeyboard" class="row">
       <key-btn v-for="key in currentNumbers"
                :key="key"
                :code="key" :title="key"
@@ -29,7 +33,7 @@
     </div>
 
     <!-- 字母区 -->
-    <div class="row" v-for="row in currentLetters" :key="row.join('')">
+    <div v-if="showKeyboard" class="row" v-for="row in currentLetters" :key="row.join('')">
       <key-btn v-for="key in row"
                :disabled="key === ''"
                :class="[keyClass(key)]"
@@ -39,7 +43,7 @@
     </div>
 
     <!-- 底部功能行 -->
-    <div class="row">
+    <div v-if="showKeyboard" class="row">
       <key-btn :class="[keyClass('Ctrl')]" :code="'Ctrl'" title="Ctrl" @press="onDown"/>
 
 
@@ -90,6 +94,8 @@ export default {
       ctrl: false,
       mode: 'letter', // letter | symbol
 
+      showKeyboard: true,
+
       layouts: {
         letter: {
           numbers: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
@@ -111,7 +117,7 @@ export default {
           numbers: ["%", "^", ",", "?", "!", "¥", "€", "£", "°", "§"],
           letters: [
             ["-", "_", "/", "\\", ".", ":", ";", "@", "$", "#"],
-            ["(", ")", "[", "]", "{", "}", "<", ">", "|", "&"],
+            ["", "(", ")", "[", "]", "{", "}", "<", ">", "|", ""],
             ["", "!", "*", "'", "\"", "`", "~", "=", "+", "", "⌫"]
           ]
         }
@@ -139,6 +145,11 @@ export default {
   },
 
   methods: {
+    toggleShown() {
+      this.showKeyboard = !this.showKeyboard;
+      this.$emit('toggleKeyboard')
+    },
+
     keyClass(key) {
       if (key === '') return 'placeholder';
       if (key === 'Ctrl') {
@@ -163,7 +174,6 @@ export default {
 
     press(key) {
       if (this.setting.vibrate > 0) {
-        // 体验不好
         vibrate(this.setting.vibrate).catch(() => {});
       }
 

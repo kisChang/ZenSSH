@@ -7,17 +7,18 @@
            size="large"
            label-suffix=":"
            @submit="false">
-<!--    <template v-if="isMobile">
+    <template v-if="isMobile">
       <h3>虚拟键盘配置：</h3>
       <el-form-item label="震动">
         <el-slider v-model="setting.virtualKeyboardVibrate"
                    style="max-width: 80%"
+                   @change="testVibrate"
                    :show-tooltip="false"
                    :step="5" show-stops :min="0" :max="50" />
         <span v-if="setting.virtualKeyboardVibrate > 0" style="margin-left: 15px">{{setting.virtualKeyboardVibrate}}ms</span>
         <span v-else style="margin-left: 15px;color: #F40">{{ $t('common.disable') }}</span>
       </el-form-item>
-    </template>-->
+    </template>
 
     <h3>{{ $t('setting.sync_config') }}</h3>
     <el-form-item :label="$t('setting.syncType')">
@@ -69,6 +70,7 @@
 import {appConfigStore, appRunState, useMngStore} from "@/store.js";
 import {isMobile} from "@/commons.js";
 import {relaunch} from "@tauri-apps/plugin-process"
+import {vibrate} from "@tauri-apps/plugin-haptics";
 
 export default {
   name: "SettingForm",
@@ -91,6 +93,10 @@ export default {
     this.settingForm = Object.assign({}, this.setting.$state)
   },
   methods: {
+    testVibrate(){
+      vibrate(this.setting.virtualKeyboardVibrate).catch(() => {});
+    },
+
     handleSave(){
       this.$refs.form.validate(valid => {
         if (valid) {

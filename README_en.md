@@ -28,8 +28,8 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [x] Gist Sync for configuration
 * [x] Auto-update (Only PC)
 * [x] Port Forwarding
+* [x] Shell-specific keyboard with keyboard vibration
 * [ ] Text file preview and editing
-* [ ] Shell-specific keyboard with keyboard vibration
 * [ ] Auto Complete
 
 ## Screenshot (Android)
