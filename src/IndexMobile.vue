@@ -101,6 +101,7 @@ import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
 import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip} from "@element-plus/icons-vue";
+import {ElMessageBox} from "element-plus";
 
 export default {
   name: "IndexMobile",
@@ -159,6 +160,7 @@ export default {
   methods: {
     // 处理安卓端返回事件的支持
     onBackButtonPress() {
+      ElMessageBox.close()
       if (this.activeTab === 'host') {
         this.$confirm("确认退出？", {showClose: false}).then(() => {
           exit(0)
