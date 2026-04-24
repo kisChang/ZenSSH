@@ -123,10 +123,12 @@ export default {
     this.$bus.on('mobile-connect-ssh', (config) => {
       this.toggleTab('conn')
       this.tabsStore.connectConfig(config, 'connect')
+      this.showTerminal = true
     })
     this.$bus.on('mobile-connect-sftp', (config) => {
       this.toggleTab('conn')
       this.tabsStore.connectConfig(config, 'sftp')
+      this.showTerminal = true
     })
     this.$bus.on('show-quick-connect', () => {
       this.toggleTab('host')
@@ -136,20 +138,11 @@ export default {
     })
     this.$bus.on('show-host-list', () => {
       this.toggleTab('host')
+      this.showTerminal = false
     })
     this.$bus.on('tab-only-one', () => {
       this.showTerminal = false
     })
-
-    // 监听连接状态变化，连接成功时自动进入TerminalTabs
-    this.$watch(
-      () => this.tabsStore.connList.map(c => c.state),
-      (states) => {
-        if (states.some(s => s === 1)) {
-          this.showTerminal = true
-        }
-      }
-    )
 
     // 检查电池优化选项
     checkBatteryOptimizationStatus().then(status => {

@@ -129,17 +129,16 @@ export default {
     onBackButtonPress() {
       if (this.downloadShow) {
         this.handleDownloadCancel()
-        return
+        return false
       }
       if (this.activeFile) {
         this.activeFile = null
-        return
+        return false
       }
       if (this.currentDir === '/') {
-        this.bakHostTab()
-        return
+        return true
       }
-      this.goUp()
+      return this.goUp()
     },
     async connect() {
       const connectConfig = Object.assign({}, this.session.config)
@@ -280,9 +279,11 @@ export default {
     },
 
     goUp() {
-      if (this.currentDir === '/') return
+      if (this.currentDir === '/')
+        return true
       this.currentDir = this.currentDir.replace(/\/[^/]+$/, '') || '/'
       this.loadDir()
+      return false
     },
 
     bakHostTab() {

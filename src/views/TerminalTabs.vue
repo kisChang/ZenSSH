@@ -128,8 +128,7 @@ export default {
       if (this.isMobile && this.activeTabContext && this.activeTabContext.length) {
         let context = this.activeTabContext[0]
         if (context.type === 'sftp' && this.$refs['sftp_' + context.sessionId]) {
-          this.$refs['sftp_' + context.sessionId][0].onBackButtonPress()
-          return false
+          return this.$refs['sftp_' + context.sessionId][0].onBackButtonPress()
         }
       }
       return true
