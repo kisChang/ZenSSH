@@ -146,8 +146,15 @@ export default {
 
   methods: {
     toggleShown() {
-      this.showKeyboard = !this.showKeyboard;
+      this.showKeyboard = !this.showKeyboard
+      this.onceVibrate()
       this.$emit('toggleKeyboard')
+    },
+
+    onceVibrate() {
+      if (this.setting.vibrate > 0) {
+        vibrate(this.setting.vibrate).catch(() => {})
+      }
     },
 
     keyClass(key) {
@@ -173,9 +180,7 @@ export default {
     },
 
     press(key) {
-      if (this.setting.vibrate > 0) {
-        vibrate(this.setting.vibrate).catch(() => {});
-      }
+      this.onceVibrate();
 
       if (key === 'Shift' || key === 'SHIFT') return this.toggleShift();
       if (key === 'Ctrl') return this.toggleCtrl();
@@ -240,7 +245,8 @@ export default {
 <style scoped lang="scss">
 .keyboard {
   background: #222;
-  padding: 4px;
+  padding: 5px;
+  margin-bottom: 10px;
   user-select: none;
   touch-action: manipulation;
 }
