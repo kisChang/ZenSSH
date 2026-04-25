@@ -45,7 +45,11 @@
                 <span v-else-if="item.state === 1">已连接</span>
                 <span v-else-if="item.state === 2">已断开</span>
               </div>-->
-              <div v-if="item.config?.portForwards?.length" class="port-forward-list">
+              <div v-if="item.type === 'sftp'" class="sftp-indicator">
+                <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
+                <span class="sftp-text">SFTP</span>
+              </div>
+              <div v-else-if="item.config?.portForwards?.length" class="port-forward-list">
                 <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
                   <el-icon :size="10" color="#409EFF"><Paperclip /></el-icon>
                   <span class="pf-text">{{ pf.localHost }}:{{ pf.localPort }}→{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
@@ -100,7 +104,7 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
-import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip} from "@element-plus/icons-vue";
+import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
 
 export default {
@@ -108,7 +112,7 @@ export default {
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -369,6 +373,16 @@ $text-sub: #94a3b8;
           color: #409EFF;
           font-family: monospace;
         }
+      }
+    }
+    .sftp-indicator {
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      .sftp-text {
+        font-size: 8px;
+        color: #67C23A;
       }
     }
   }
