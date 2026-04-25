@@ -20,8 +20,6 @@ ZenSSH is a cross-platform SSH client built with Tauri, supporting SSH connectio
 
 The goal of this project is to meet daily SSH usage needs **while keeping it lightweight and performant**, avoiding unnecessary complex features, making it ideal for developers and operations personnel.
 
-⚠️ **Note:** This is an early development version. Only core functionalities have been verified and it has not been fully tested.
-
 ## Features
 
 * [x] SSH / SFTP / Jump Server
@@ -30,7 +28,6 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [x] Port Forwarding
 * [x] Shell-specific keyboard with keyboard vibration
 * [x] Text file preview and editing
-* [ ] Auto Complete
 
 ## Screenshot (Android)
 
