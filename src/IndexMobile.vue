@@ -13,66 +13,73 @@
     </header>
 
     <main class="content">
-      <mobile-host v-show="activeTab === 'host'" ref="hostMng"/>
+      <transition :name="transitionName" mode="out-in">
+        <div :key="activeTab" class="tab-content">
+          <mobile-host v-if="activeTab === 'host'" ref="hostMng"/>
 
-      <!-- 移动端连接列表 -->
-      <div v-show="activeTab === 'conn'" class="conn-list-view">
-        <el-empty v-if="tabsStore.connList <= 0"
-                  image="/logo.png"
-                  description=" ">
-          <div slot="description" v-html="$t('common.hello')"></div>
-          <el-button style="margin-top: 30px;" type="primary" @click="toggleTab('host')">
-            {{ $t('main.quickConnect') }}
-          </el-button>
-        </el-empty>
+          <!-- 移动端连接列表 -->
+          <div v-else-if="activeTab === 'conn'" class="conn-list-view">
+            <el-empty v-if="tabsStore.connList <= 0"
+                      image="/logo.png"
+                      description=" ">
+              <div slot="description" v-html="$t('common.hello')"></div>
+              <el-button style="margin-top: 30px;" type="primary" @click="toggleTab('host')">
+                {{ $t('main.quickConnect') }}
+              </el-button>
+            </el-empty>
 
-        <el-scrollbar v-else
-                      class="conn-list-scroll">
-          <div v-for="item in tabsStore.connList"
-               :key="item.id"
-               class="conn-item">
-            <div class="conn-icon-wrap"
-                 @click="selectConn(item)">
-              <el-icon v-if="item.state === 0" class="is-loading" :size="24"><Loading /></el-icon>
-              <el-icon v-else-if="item.state === 1" color="#67C23A" :size="24"><Link /></el-icon>
-              <el-icon v-else-if="item.state === 2" color="#F40" :size="24"><CircleCloseFilled/></el-icon>
-            </div>
-            <div class="conn-info"
-                 @click="selectConn(item)">
-              <div class="conn-title">{{ item.title }}</div>
+            <el-scrollbar v-else
+                          class="conn-list-scroll">
+              <div v-for="item in tabsStore.connList"
+                   :key="item.id"
+                   class="conn-item">
+                <div class="conn-icon-wrap"
+                     @click="selectConn(item)">
+                  <el-icon v-if="item.state === 0" class="is-loading" :size="24"><Loading /></el-icon>
+                  <el-icon v-else-if="item.state === 1" color="#67C23A" :size="24"><Link /></el-icon>
+                  <el-icon v-else-if="item.state === 2" color="#F40" :size="24"><CircleCloseFilled/></el-icon>
+                </div>
+                <div class="conn-info"
+                     @click="selectConn(item)">
+                  <div class="conn-title">{{ item.title }}</div>
 <!--              <div class="conn-state">
                 <span v-if="item.state === 0">连接中...</span>
                 <span v-else-if="item.state === 1">已连接</span>
                 <span v-else-if="item.state === 2">已断开</span>
               </div>-->
-              <div v-if="item.type === 'sftp'" class="sftp-indicator">
-                <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
-                <span class="sftp-text">SFTP</span>
-              </div>
-              <div v-else-if="item.config?.portForwards?.length" class="port-forward-list">
-                <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
-                  <el-icon :size="10" color="#409EFF"><Paperclip /></el-icon>
-                  <span class="pf-text">{{ pf.localHost }}:{{ pf.localPort }}→{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
+                  <div v-if="item.type === 'sftp'" class="sftp-indicator">
+                    <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
+                    <span class="sftp-text">SFTP</span>
+                  </div>
+                  <div v-else-if="item.config?.portForwards?.length" class="port-forward-list">
+                    <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
+                      <el-icon :size="10" color="#409EFF"><Paperclip /></el-icon>
+                      <span class="pf-text">{{ pf.localHost }}:{{ pf.localPort }}→{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
+                    </div>
+                  </div>
                 </div>
+                <el-button style="background: none;padding: 15px;"
+                           size="small"
+                           circle
+                           @click="closeConn(item)">
+                  <el-icon class="conn-arrow" :size="15"><Close/></el-icon>
+                </el-button>
               </div>
-            </div>
-            <el-button style="background: none;padding: 15px;"
-                       size="small"
-                       circle
-                       @click="closeConn(item)">
-              <el-icon class="conn-arrow" :size="15"><Close/></el-icon>
-            </el-button>
+            </el-scrollbar>
           </div>
-        </el-scrollbar>
-      </div>
 
-      <!-- 移动端终端页面 -->
-      <terminal-tabs ref="terminalTabs"
-                     class="terminal-mobile"
-                     v-show="showTerminal"
-                     :active="showTerminal"/>
-      <mobile-setting v-show="activeTab === 'setting'"/>
+          <mobile-setting v-else-if="activeTab === 'setting'"/>
+        </div>
+      </transition>
     </main>
+
+    <!-- 移动端终端页面 -->
+    <transition name="terminal-anim">
+      <terminal-tabs v-show="activeTab === 'conn' && showTerminal"
+                     ref="terminalTabs"
+                     class="terminal-mobile"
+                     :active="showTerminal"/>
+    </transition>
 
     <footer class="tabbar">
       <div class="tab" @click="toggleTab('host')" :class="{active : activeTab === 'host'}">
@@ -120,6 +127,8 @@ export default {
       title: '',
       tabsStore: tabsStore,
       showTerminal: false,
+      transitionName: 'slide-left',
+      tabIndexMap: { 'host': 0, 'conn': 1, 'setting': 2 },
     }
   },
   mounted() {
@@ -192,6 +201,9 @@ export default {
         'conn': "main.conn",
         'setting': "main.setting",
       }
+      const fromIndex = this.tabIndexMap[this.activeTab]
+      const toIndex = this.tabIndexMap[to]
+      this.transitionName = toIndex > fromIndex ? 'slide-left' : 'slide-right'
       this.activeTab = to
       this.title = this.$t(titleMap[to])
     },
@@ -257,6 +269,19 @@ $text-sub: #94a3b8;
   right: 0;
 }
 
+.terminal-anim-enter-active,
+.terminal-anim-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.terminal-anim-enter-from {
+  transform: translateY(100%);
+}
+
+.terminal-anim-leave-to {
+  transform: translateY(100%);
+}
+
 .header {
   flex-shrink: 0;
   height: 56px;
@@ -288,6 +313,12 @@ $text-sub: #94a3b8;
 .content {
   flex: 1;
   overflow: hidden;
+  position: relative;
+
+  .tab-content {
+    width: 100%;
+    height: 100%;
+  }
 
   h2 {
     margin-top: 10vh;
@@ -386,6 +417,31 @@ $text-sub: #94a3b8;
       }
     }
   }
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-right-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
 }
 
 .tabbar {
