@@ -4,9 +4,10 @@
     <div class="toolbar">
       <div class="path">📂 {{ currentDir }}</div>
       <div class="actions">
-        <button @click="bakHostTab">🏡 Host</button>
-        <button @click="goUp">🔼 Back</button>
+        <button v-show="isMobile" @click="bakHostTab">⬅ Hosts</button>
+        <button @click="goUp">🔼 parent dir</button>
         <button @click="mkdir">📁 mkdir</button>
+        <button @click="touchFile">📄 mkfile</button>
         <button @click="upload">📤 upload</button>
       </div>
     </div>
@@ -77,12 +78,12 @@
 
 <script>
 import {open, save} from '@tauri-apps/plugin-dialog';
-import {writeFile, exists, create, readFile} from '@tauri-apps/plugin-fs';
+import {readFile, writeFile} from '@tauri-apps/plugin-fs';
 import {Channel, invoke} from '@tauri-apps/api/core'
 import {useTabsStore} from "@/store.js";
-import {genId, sep} from "@/commons.js";
+import {genId, isMobile, sep} from "@/commons.js";
 import TextEditor from "./TextEditor.vue";
-import { Edit, Download } from '@element-plus/icons-vue';
+import {Download, Edit} from '@element-plus/icons-vue';
 
 export default {
   components: { TextEditor, Edit, Download },
@@ -93,6 +94,9 @@ export default {
     }
   },
   computed: {
+    isMobile() {
+      return isMobile()
+    },
     sessionId(){
       return this.session.sessionId;
     },
@@ -264,11 +268,30 @@ export default {
     },
 
     async mkdir() {
-      const name = prompt('目录名')
-      if (!name) return
+      const { value } = await this.$prompt('请输入目录名', '新建目录', {
+        showClose: false,
+        inputPattern: /\S+/,
+        inputErrorMessage: '目录名不能为空',
+      }).catch(() => {})
+      if (!value) return
       await invoke('ssh_sftp_mkdir', {
         sessionId: this.sessionId,
-        dir: this.currentDir + '/' + name,
+        dir: this.currentDir + '/' + value,
+      })
+      await this.loadDir()
+    },
+
+    async touchFile() {
+      const { value } = await this.$prompt('请输入文件名', '新建文件', {
+        showClose: false,
+        inputPattern: /\S+/,
+        inputErrorMessage: '文件名不能为空',
+      }).catch(() => {})
+      if (!value) return
+      await invoke('ssh_sftp_write', {
+        sessionId: this.sessionId,
+        filePath: this.currentDir + '/' + value,
+        data: new Uint8Array([]),
       })
       await this.loadDir()
     },
