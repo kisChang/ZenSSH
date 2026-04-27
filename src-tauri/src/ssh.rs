@@ -906,6 +906,7 @@ impl SshSession {
     }
 
     /// 端口转发（本地端口转发）
+    /// 当 remote_host 为 localhost/127.0.0.1 且 remote_port 为 0 时，启用 SOCKS5 动态转发模式
     pub async fn local_port_forward(&self, config: PortForwardConfig) -> Result<PortForwardResult> {
         let local_addr = format!("{}:{}", config.local_host, config.local_port);
         let listener = tokio::net::TcpListener::bind(&local_addr).await?;
@@ -913,6 +914,10 @@ impl SshSession {
         let handle = self.handle.clone();
         let result_local_host = config.local_host.clone();
         let result_local_port = config.local_port;
+
+        // 判断是否为 SOCKS5 模式
+        let is_socks5 = (config.remote_host == "localhost" || config.remote_host == "127.0.0.1")
+            && config.remote_port == 0;
 
         let mut shutdown_rx = self.shutdown_rx.clone();
         tokio::spawn(async move {
@@ -940,10 +945,24 @@ impl SshSession {
                         let local_port = config.local_port;
 
                         tokio::spawn(async move {
+                            // SOCKS5 模式：先握手获取目标地址
+                            let (target_host, target_port) = if is_socks5 {
+                                match socks5_handshake(&mut local_stream).await {
+                                    Ok((h, p)) => (h, p),
+                                    Err(e) => {
+                                        error!("SOCKS5 handshake failed: {}", e);
+                                        return;
+                                    }
+                                }
+                            } else {
+                                (remote_host, remote_port)
+                            };
+                            error!("info channel remote {}:{}", target_host, target_port);
+
                             let channel = match handle
                                 .channel_open_direct_tcpip(
-                                    &remote_host,
-                                    remote_port,
+                                    &target_host,
+                                    target_port,
                                     &local_host,
                                     local_port
                                 )
@@ -951,7 +970,7 @@ impl SshSession {
                             {
                                 Ok(c) => c,
                                 Err(e) => {
-                                    error!("channel open failed: {}", e);
+                                    error!("channel open failed to {}:{}: {}", target_host, target_port, e);
                                     return;
                                 }
                             };
@@ -1056,6 +1075,84 @@ impl SshSession {
     }
 
     // 启动服务器状态监控通道（由 connect_direct/connect_via_bastion 调用 monitor::start_monitor）
+}
+
+/// SOCKS5 握手：从客户端读取请求并返回目标地址
+async fn socks5_handshake(stream: &mut tokio::net::TcpStream) -> Result<(String, u32)> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    // --- 协商阶段：读取方法列表 ---
+    let mut buf = [0u8; 2];
+    stream.read_exact(&mut buf).await?;
+    if buf[0] != 0x05 {
+        bail!("Not SOCKS5, got version: 0x{:02x}", buf[0]);
+    }
+    let n_methods = buf[1] as usize;
+    let mut _methods = vec![0u8; n_methods];
+    stream.read_exact(&mut _methods).await?;
+
+    // 回复：选择无认证
+    stream.write_all(&[0x05, 0x00]).await?;
+
+    // --- 请求阶段：读取连接请求 ---
+    let mut hdr = [0u8; 4];
+    stream.read_exact(&mut hdr).await?;
+    if hdr[0] != 0x05 {
+        bail!("Not SOCKS5 request: version 0x{:02x}", hdr[0]);
+    }
+    if hdr[1] != 0x01 {
+        bail!("Only CONNECT command supported, got 0x{:02x}", hdr[1]);
+    }
+
+    let atyp = hdr[3];
+    let (host, port) = match atyp {
+        0x01 => {
+            // IPv4
+            let mut addr_buf = [0u8; 6];
+            stream.read_exact(&mut addr_buf).await?;
+            let host = format!(
+                "{}.{}.{}.{}",
+                addr_buf[0], addr_buf[1], addr_buf[2], addr_buf[3]
+            );
+            let port = u16::from_be_bytes([addr_buf[4], addr_buf[5]]) as u32;
+            (host, port)
+        }
+        0x03 => {
+            // 域名：1字节长度 + 域名 + 2字节端口
+            let mut len_buf = [0u8; 1];
+            stream.read_exact(&mut len_buf).await?;
+            let name_len = len_buf[0] as usize;
+            let mut name_buf = vec![0u8; name_len];
+            stream.read_exact(&mut name_buf).await?;
+            let host = String::from_utf8(name_buf)?;
+            let mut port_buf = [0u8; 2];
+            stream.read_exact(&mut port_buf).await?;
+            let port = u16::from_be_bytes(port_buf) as u32;
+            (host, port)
+        }
+        0x04 => {
+            // IPv6
+            let mut addr_buf = [0u8; 16];
+            stream.read_exact(&mut addr_buf).await?;
+            let host = format!(
+                "[{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}:{:02x}{:02x}]",
+                addr_buf[0], addr_buf[1], addr_buf[2], addr_buf[3],
+                addr_buf[4], addr_buf[5], addr_buf[6], addr_buf[7],
+                addr_buf[8], addr_buf[9], addr_buf[10], addr_buf[11],
+                addr_buf[12], addr_buf[13], addr_buf[14], addr_buf[15],
+            );
+            let mut port_buf = [0u8; 2];
+            stream.read_exact(&mut port_buf).await?;
+            let port = u16::from_be_bytes(port_buf) as u32;
+            (host, port)
+        }
+        _ => bail!("Unsupported address type: 0x{:02x}", atyp),
+    };
+
+    // --- 回复成功：绑定地址填 0.0.0.0:0 ---
+    stream.write_all(&[0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]).await?;
+
+    Ok((host, port))
 }
 
 fn non_empty(opt: Option<&String>) -> Option<&str> {

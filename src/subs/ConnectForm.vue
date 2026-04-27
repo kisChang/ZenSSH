@@ -120,9 +120,9 @@
 import {useMngStore} from "@/store.js";
 
 export const DEFAULT_PF = {
-  localHost: "localhost",
-  localPort: 0,
-  remoteHost: "localhost",
+  localHost: "127.0.0.1",
+  localPort: 1000,
+  remoteHost: "127.0.0.1",
   remotePort: 0,
 }
 export const DEFAULT_CONFIG = {
