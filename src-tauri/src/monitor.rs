@@ -238,7 +238,7 @@ pub async fn start_monitor(
     session_id: String,
     shutdown_rx: tokio::sync::watch::Receiver<bool>,
 ) {
-    let interval_secs = 5.0f64;
+    let interval_secs = 1.0f64;
 
     // 打开一个新的 session channel
     let mut channel = match handle.channel_open_session().await {
@@ -257,7 +257,7 @@ echo "===MEMINFO==="
 grep -E '^(MemTotal|MemFree|MemAvailable|Buffers|Cached|SwapTotal|SwapFree):' /proc/meminfo
 echo "===NETDEV==="
 cat /proc/net/dev
-sleep 2
+sleep 1
 done
 "#;
 

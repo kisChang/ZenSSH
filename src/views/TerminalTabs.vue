@@ -101,6 +101,12 @@ export default {
         keepScreenOn(newVal)
       },
     },
+    activeTab: {
+      handler(newVal) {
+        const item = this.tabs.find(v => v.id === newVal);
+        this.$emit('tab-change', item?.sessionId || null);
+      },
+    },
   },
   computed: {
     activeTabContext() {

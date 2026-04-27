@@ -28,6 +28,8 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 * [x] Port Forwarding
 * [x] Shell-specific keyboard with keyboard vibration
 * [x] Text file preview and editing
+* [x] Server monitoring (basic)
+* [x] Socks5 proxy
 
 ## Screenshot (Android)
 

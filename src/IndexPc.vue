@@ -46,7 +46,12 @@
         <connect-manage ref="connectManage"/>
       </el-splitter-panel>
       <el-splitter-panel :min="200">
-        <terminal-tabs ref="terminalTabs"/>
+        <div class="terminal-panel">
+          <terminal-tabs ref="terminalTabs" @tab-change="activeSessionId = $event"/>
+          <div class="status-bar" v-if="activeSessionId">
+            <server-monitor :session-id="activeSessionId"/>
+          </div>
+        </div>
       </el-splitter-panel>
     </el-splitter>
   </el-container>
@@ -58,11 +63,12 @@ import {openUrl} from '@tauri-apps/plugin-opener'
 import {exit, relaunch} from '@tauri-apps/plugin-process'
 import ConnectManage from "./views/ConnectManage.vue";
 import TerminalTabs from "./views/TerminalTabs.vue";
+import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 
 export default {
   name: "IndexPc",
-  components: {TerminalTabs, ConnectManage},
+  components: {ServerMonitor, TerminalTabs, ConnectManage},
   props: {
     isLoading: false,
   },
@@ -72,6 +78,7 @@ export default {
       activeMenu: "",
       showUpdater: false,
       update: null,
+      activeSessionId: null,
     }
   },
   mounted() {
@@ -162,6 +169,38 @@ export default {
 }
 :deep(.el-splitter) {
   height: calc(100vh - 30px);
+}
+
+.terminal-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 30px);
+  :deep(.terminal-tabs),
+  :deep(.terminal-tabs-welcome) {
+    flex: 1 1 0;
+    height: auto !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+  :deep(.terminal-container) {
+    height: calc(100vh - 90px);
+  }
+}
+
+.status-bar {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 12px;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.status-bar-empty {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .el-menu--horizontal {
