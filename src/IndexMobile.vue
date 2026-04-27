@@ -51,7 +51,10 @@
                     <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
                     <span class="sftp-text">SFTP</span>
                   </div>
-                  <div v-else-if="item.config?.portForwards?.length" class="port-forward-list">
+                  <div v-if="item.type === 'connect' && item.state === 1" class="monitor-indicator">
+                    <server-monitor :session-id="item.sessionId"/>
+                  </div>
+                  <div v-if="item.config?.portForwards?.length" class="port-forward-list">
                     <div v-for="(pf, idx) in item.config.portForwards" :key="idx" class="port-forward-item">
                       <el-icon :size="10" color="#409EFF"><Paperclip /></el-icon>
                       <span class="pf-text">{{ pf.localHost }}:{{ pf.localPort }}→{{ pf.remoteHost }}:{{ pf.remotePort }}</span>
@@ -103,11 +106,12 @@ import {
   checkBatteryOptimizationStatus,
   requestBatteryOptimizationExemption,
 } from 'tauri-plugin-android-battery-optimization-api';
-import ConnectManage from "./views/ConnectManage.vue";
-import TerminalTabs from "./views/TerminalTabs.vue";
+import ConnectManage from "@/views/ConnectManage.vue";
+import TerminalTabs from "@/views/TerminalTabs.vue";
 import MobileHost from "@/mobile/MobileHost.vue";
-import {useTabsStore} from "@/store.js";
 import MobileSetting from "@/mobile/MobileSetting.vue";
+import ServerMonitor from "@/subs/ServerMonitor.vue";
+import {useTabsStore} from "@/store.js";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
@@ -119,7 +123,7 @@ export default {
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, MobileSetting, MobileHost, TerminalTabs, ConnectManage},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, MobileSetting, MobileHost, TerminalTabs, ConnectManage, ServerMonitor},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -127,6 +131,7 @@ export default {
       title: '',
       tabsStore: tabsStore,
       showTerminal: false,
+      monitorSession: null,
       transitionName: 'slide-left',
       tabIndexMap: { 'host': 0, 'conn': 1, 'setting': 2 },
     }
@@ -238,6 +243,9 @@ export default {
           this.$refs.terminalTabs.activeTab = item.id
         }
       })
+    },
+    openMonitor(item) {
+      this.monitorSession = item;
     },
   }
 };
@@ -353,7 +361,7 @@ $text-sub: #94a3b8;
     .conn-item {
       display: flex;
       align-items: center;
-      padding: 12px;
+      padding: 5px 10px;
       margin-bottom: 8px;
       background: $card;
       border-radius: 8px;
@@ -373,7 +381,7 @@ $text-sub: #94a3b8;
     }
     .conn-info {
       flex: 1;
-      margin-left: 12px;
+      margin-left: 10px;
       min-width: 0;
       .conn-title {
         font-size: 15px;
@@ -394,7 +402,6 @@ $text-sub: #94a3b8;
       flex-shrink: 0;
     }
     .port-forward-list {
-      margin-top: 4px;
       .port-forward-item {
         display: flex;
         align-items: center;
@@ -473,6 +480,35 @@ $text-sub: #94a3b8;
 
     span {
       font-size: 0.7rem;
+    }
+  }
+}
+
+// Monitor inline panel styles
+.monitor-panel {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom);
+  left: 0;
+  right: 0;
+  background: $card;
+  z-index: 10;
+  border-top: 1px solid #1e293b;
+  .monitor-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid #1e293b;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    .close-icon {
+      font-size: 18px;
+      cursor: pointer;
+      color: #94a3b8;
+      &:hover {
+        color: #fff;
+      }
     }
   }
 }

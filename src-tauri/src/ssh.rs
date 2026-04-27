@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use crate::monitor;
 
 /// 链接会话管理（key: session_id）
 static SSH_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SshSession>>>>> =
@@ -381,7 +382,7 @@ pub fn sync_config(config_map: HashMap<String, SshConfig>) {
     info!("Sync: {:?}", map);
 }
 
-struct SshClient {}
+pub struct SshClient {}
 
 impl client::Handler for SshClient {
     type Error = russh::Error;
@@ -414,6 +415,8 @@ pub struct SshSession {
 
     shutdown_rx: tokio::sync::watch::Receiver<bool>,
     shutdown_tx: tokio::sync::watch::Sender<bool>,
+    /// 监控通道关闭信号
+    monitor_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
 }
 
 impl SshSession {
@@ -494,17 +497,28 @@ impl SshSession {
 
         let (read, write) = channel.split();
         let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+        // 监控专用 shutdown channel
+        let (monitor_tx, monitor_rx) = tokio::sync::watch::channel(false);
         let session = Self {
-            session_id,
+            session_id: session_id.clone(),
             config_id,
             handle: Arc::new(handle),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
             shutdown_rx,
-            shutdown_tx
+            shutdown_tx,
+            monitor_shutdown_tx: Some(monitor_tx),
         };
 
-        session.init_shell(app, read, on_event).await;
+        session.init_shell(app.clone(), read, on_event).await;
+        // 启动监控通道
+        let monitor_handle_clone = session.handle.clone();
+        let monitor_session_id = session_id.clone();
+        let monitor_app = app.clone();
+        tokio::spawn(async move {
+            monitor::start_monitor(monitor_app, monitor_handle_clone, monitor_session_id, monitor_rx).await;
+        });
+
         Ok(session)
     }
 
@@ -595,16 +609,26 @@ impl SshSession {
 
         let (read, write) = channel.split();
         let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+        // 监控专用 shutdown channel
+        let (monitor_tx, monitor_rx) = tokio::sync::watch::channel(false);
         let session = Self {
-            session_id,
+            session_id: session_id.clone(),
             config_id,
             handle: handle.into(),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
             shutdown_rx,
-            shutdown_tx
+            shutdown_tx,
+            monitor_shutdown_tx: Some(monitor_tx),
         };
-        session.init_shell(app, read, on_event).await;
+        session.init_shell(app.clone(), read, on_event).await;
+        // 启动监控通道
+        let monitor_handle_clone = session.handle.clone();
+        let monitor_session_id = session_id.clone();
+        let monitor_app = app.clone();
+        tokio::spawn(async move {
+            monitor::start_monitor(monitor_app, monitor_handle_clone, monitor_session_id, monitor_rx).await;
+        });
         Ok(session)
     }
 
@@ -1014,6 +1038,10 @@ impl SshSession {
 
     pub async fn close(&self) -> Result<()> {
         let _ = self.shutdown_tx.send(true);
+        // 关闭监控通道
+        if let Some(ref tx) = self.monitor_shutdown_tx {
+            let _ = tx.send(true);
+        }
         let channel = {
             let mut guard = self.write.lock().unwrap();
             guard.take()
@@ -1026,6 +1054,8 @@ impl SshSession {
             .await;
         Ok(())
     }
+
+    // 启动服务器状态监控通道（由 connect_direct/connect_via_bastion 调用 monitor::start_monitor）
 }
 
 fn non_empty(opt: Option<&String>) -> Option<&str> {
