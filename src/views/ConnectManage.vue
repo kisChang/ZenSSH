@@ -9,7 +9,12 @@
         <div class="title">{{ once.name }}</div>
         <div class="subtitle">
           <el-icon v-if="once.isCloud" color="#22c55e"><UploadFilled /></el-icon>
-          {{ once.username }}@{{ once.host }}
+          <template v-if="once.type === 'serial'">
+            Serial: {{ once.portName }} @ {{ once.baudRate }}
+          </template>
+          <template v-else>
+            {{ once.username }}@{{ once.host }}
+          </template>
         </div>
       </div>
     </div>
@@ -19,17 +24,17 @@
 
     <el-dialog
         v-model="showConnect"
-        :title="(configAdd ? $t('common.create') : $t('common.update')) + $t('main.conn')"
+        :title="(configAdd ? $t('common.create') : $t('common.update')) + (config.type === 'serial' ? $t('connect.typeSerial') : ' ' + $t('main.conn'))"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         top="5vh"
         modal-class="app-dialog">
-      <connect-form ref="connectForm" v-model="config" />
+      <connect-form ref="connectForm" v-model="config" :is-edit="!configAdd" />
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="showConnect = false">{{ $t('common.cancel') }}</el-button>
           <el-button v-if="configAdd" type="primary" @click="quickConnect">
-            {{ $t('main.quickConnect') }}
+            {{ config.type === 'serial' ? $t('main.serialConnect') : $t('main.quickConnect') }}
           </el-button>
           <el-button v-else type="primary" @click="saveConfig">
             {{ $t('common.submit') }}

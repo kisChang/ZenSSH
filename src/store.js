@@ -231,10 +231,19 @@ export const useMngStore = defineStore('UserConf', {
         },
         normalizeConfig(config) {
             // 填充默认值
-            if (config.port === undefined) config.port = 22;
-            if (!config.timeout) config.timeout = 30;
-            if (!config.keepaliveInterval) config.keepaliveInterval = 30;
-            if (!config.authType) config.authType = 'password';
+            if (!config.type) config.type = 'ssh';
+            if (config.type === 'ssh') {
+                if (config.port === undefined) config.port = 22;
+                if (!config.timeout) config.timeout = 30;
+                if (!config.keepaliveInterval) config.keepaliveInterval = 30;
+                if (!config.authType) config.authType = 'password';
+            } else if (config.type === 'serial') {
+                if (!config.baudRate) config.baudRate = 115200;
+                if (!config.dataBits) config.dataBits = 8;
+                if (!config.parity) config.parity = 'None';
+                if (!config.stopBits) config.stopBits = 1;
+                if (!config.flowControl) config.flowControl = 'None';
+            }
         },
         removeConfig(id) {
             this.configList = this.configList.filter(item => item.configId !== id)
@@ -279,7 +288,14 @@ export const useTabsStore = defineStore('counter', {
     actions: {
         connectConfig(config, type) {
             config = Object.assign({}, config);
-            let title = config.name || config.username + "@" + config.host;
+            let title = config.name;
+            if (!title) {
+                if (config.type === 'serial') {
+                    title = 'Serial: ' + config.portName;
+                } else {
+                    title = config.username + "@" + config.host;
+                }
+            }
             let sessionId = "s_" + genId();
             this.connList.push({
                 id: sessionId,

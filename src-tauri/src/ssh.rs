@@ -22,58 +22,81 @@ static SFTP_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SftpSession>>>>> =
 static CONFIG_MAP: Lazy<Arc<Mutex<HashMap<String, SshConfig>>>> =
     Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
-/// SSH 连接配置
+/// SSH/串口 连接配置
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SshConfig {
+    /// 连接类型: "ssh" 或 "serial"
+    #[serde(default = "default_type_ssh")]
+    pub r#type: String,
     /// 配置ID（由前端生成，唯一标识配置）
+    #[serde(default)]
     pub config_id: String,
     /// 主机地址
+    #[serde(default = "default_host")]
     pub host: String,
     /// 端口号，默认 22
-    #[serde(default)]
+    #[serde(default = "default_port")]
     pub port: u16,
     /// 用户名
+    #[serde(default = "default_username")]
     pub username: String,
     /// 密码认证
+    #[serde(default)]
     pub password: Option<String>,
     /// 私钥路径（支持多种格式：OpenSSH, PEM, PKCS8 等）
+    #[serde(default)]
     pub private_key_path: Option<String>,
     /// 私钥内容（直接提供密钥内容，优先级高于路径）
+    #[serde(default)]
     pub private_key_data: Option<String>,
     /// 密钥密码（用于加密的私钥）
+    #[serde(default)]
     pub key_password: Option<String>,
     /// 连接超时（秒）
-    #[serde(default)]
+    #[serde(default = "default_timeout")]
     pub timeout: u64,
     /// 保持连接间隔（秒）
-    #[serde(default)]
+    #[serde(default = "default_keepalive")]
     pub keepalive_interval: u64,
-    /// 跳板机配置
+    /// 跳板机配置（仅SSH）
+    #[serde(default)]
     pub bastion_config_id: Option<String>,
-    /// 端口转发配置列表
+    /// 端口转发配置列表（仅SSH）
     #[serde(default)]
     pub port_forwards: Vec<PortForwardConfig>,
+    // === 串口专用字段 ===
+    /// 串口设备名（如 "COM3" 或 "/dev/ttyUSB0"）
+    #[serde(default)]
+    pub port_name: String,
+    /// 波特率，默认 115200
+    #[serde(default = "default_baud_rate")]
+    pub baud_rate: u32,
+    /// 数据位，默认 8
+    #[serde(default = "default_data_bits")]
+    pub data_bits: u8,
+    /// 校验位: "None", "Even", "Odd"
+    #[serde(default = "default_parity")]
+    pub parity: String,
+    /// 停止位，默认 1
+    #[serde(default = "default_stop_bits")]
+    pub stop_bits: u8,
+    /// 流控: "None", "Software", "Hardware"
+    #[serde(default = "default_flow_control")]
+    pub flow_control: String,
 }
 
-impl Default for SshConfig {
-    fn default() -> Self {
-        SshConfig {
-            config_id: "".to_string(),
-            host: "127.0.0.1".to_string(),
-            port: 22,
-            username: "root".to_string(),
-            password: None,
-            private_key_path: None,
-            private_key_data: None,
-            key_password: None,
-            timeout: 30,
-            keepalive_interval: 30,
-            bastion_config_id: None,
-            port_forwards: Vec::new(),
-        }
-    }
-}
+fn default_type_ssh() -> String { "ssh".to_string() }
+fn default_host() -> String { "127.0.0.1".to_string() }
+fn default_port() -> u16 { 22 }
+fn default_username() -> String { "root".to_string() }
+fn default_timeout() -> u64 { 30 }
+fn default_keepalive() -> u64 { 30 }
+fn default_baud_rate() -> u32 { 115200 }
+fn default_data_bits() -> u8 { 8 }
+fn default_parity() -> String { "None".to_string() }
+fn default_stop_bits() -> u8 { 1 }
+fn default_flow_control() -> String { "None".to_string() }
 
 /// 端口转发配置
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -538,6 +561,10 @@ impl SshSession {
             if let Some(config_id) = non_empty(Some(&id)) {
                 let map = CONFIG_MAP.lock().unwrap();
                 let cfg = map.get(config_id).unwrap().clone();
+                // 跳过串口配置（跳板链中不应包含串口）
+                if cfg.r#type == "serial" || cfg.host.is_empty() {
+                    break;
+                }
                 chain.push(cfg.clone());
                 current = cfg.bastion_config_id.clone();
             } else {

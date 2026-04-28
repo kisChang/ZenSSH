@@ -1,7 +1,8 @@
 mod encrypt;
-mod monitor;
-mod sftp;
 mod ssh;
+mod sftp;
+mod monitor;
+mod serial;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -55,6 +56,11 @@ pub fn run() {
         ssh::ssh_port_forward,
         ssh::ssh_close_port_forward,
         ssh::ssh_list_port_forwards,
+        // 串口通讯
+        serial::serial_list,
+        serial::serial_connect,
+        serial::serial_write,
+        serial::serial_close,
         // 加解密支持
         encrypt::encrypt_derive_key,
         encrypt::encrypt_gen_salt,

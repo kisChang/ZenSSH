@@ -12,7 +12,7 @@
           </button>
           <button v-else class="btn" @click="quickConnect">
             <el-icon><Position /></el-icon>
-            {{ $t('main.quickConnect') }}
+            {{ config.type === 'serial' ? $t('main.serialConnect') : $t('main.quickConnect') }}
           </button>
         </div>
       </el-scrollbar>
@@ -26,7 +26,12 @@
           <div class="title">{{ once.name }}</div>
           <div class="subtitle">
             <el-icon v-if="once.isCloud" color="#22c55e"><UploadFilled /></el-icon>
-            {{ once.username }}@{{ once.host }}
+            <template v-if="once.type === 'serial'">
+              Serial: {{ once.portName }} @ {{ once.baudRate }}
+            </template>
+            <template v-else>
+              {{ once.username }}@{{ once.host }}
+            </template>
           </div>
         </div>
       </el-scrollbar>

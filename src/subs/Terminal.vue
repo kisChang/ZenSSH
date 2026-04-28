@@ -79,7 +79,8 @@ export default {
       if (this.closed) return;
       this.closed = true;
       this.tabStore.connectClose(this.sessionId);
-      invoke("ssh_close", { sessionId: this.sessionId }).catch(() => {});
+      const cmd = this.session.config?.type === 'serial' ? 'serial_close' : 'ssh_close';
+      invoke(cmd, { sessionId: this.sessionId }).catch(() => {});
       this.unbindTouchEvents()
     },
     async connect() {
@@ -87,6 +88,7 @@ export default {
       const connectConfig = Object.assign({}, this.session.config)
       connectConfig.configId = this.session.configId
       connectConfig.sessionId = this.session.sessionId
+      const isSerial = connectConfig.type === 'serial';
       let fontSize = isMobile() ? 12 : 14
       // 初始化 Terminal
       this.term = new Terminal({
@@ -112,68 +114,116 @@ export default {
       this.term.open(this.$refs.terminal);
       // 禁用输入后，这样可以直接使用内建的软键盘输入
       this.term.textarea.readOnly = this.enableKeyboard
-      // 将event与Terminal建立连接，监听 SSH 事件
+      // 将event与Terminal建立连接，监听事件
       const onEvent = new Channel();
-      onEvent.onmessage = ({ event, data }) => {
-        switch (event) {
-          case "data":
-          case "extendedData":
-            this.term.write(data.data);
-            break;
-          case "eof":
-          case "close":
-            this.term.write("\r\n[connection closed]\r\n");
-            this.term.blur();
-            this.disconnect();
-            break;
-          case "exitStatus":
-            this.term.write(`\r\n[process exited with code ${data.exitStatus}]\r\n`);
-            break;
-          case "exitSignal":
-            this.term.write(`\r\n[terminated by signal ${data.signalName}]\r\n`);
-            break;
-          case "openFailure":
-            this.term.write(`\r\n[channel open failed, code=${data.code}]\r\n`);
-            break;
-          default:
-            console.debug("ssh event:", event);
-        }
-      }
-      // 正式建立SSH连接
-      await invoke("ssh_connect", {
-        onEvent: onEvent,
-        sessionId: this.sessionId,
-        cols: 60,
-        rows: 40,
-        config: connectConfig
-      });
-      // Terminal 输入发送给 ssh
-      this.term.onData(data => {
-        if (this.closed) return;
-        invoke('ssh_run_command', {
-          sessionId: this.sessionId,
-          command: data
-        }).catch(err => {
-          // TODO 这里的异常如何处理待考虑
-        })
-      });
 
-      // 调整窗体大小
-      await this.$nextTick()
-      this.fitAddon.fit()
-      invoke('ssh_window_change', {
-        sessionId: this.sessionId,
-        colWidth: this.term.cols,
-        rowHeight: this.term.rows,
-      }).catch()
-      // Terminal resize 时通知 ssh
-      this.term.onResize((event) => {
+      if (isSerial) {
+        // 串口连接事件处理
+        onEvent.onmessage = ({ event, data }) => {
+          switch (event) {
+            case "connected":
+              this.term.write("[Serial connected]\r\n");
+              break;
+            case "data":
+              const uint8 = new Uint8Array(data.data);
+              const decoder = new TextDecoder();
+              this.term.write(decoder.decode(uint8));
+              break;
+            case "closed":
+              this.term.write("\r\n[connection closed]\r\n");
+              this.term.blur();
+              this.disconnect();
+              break;
+            case "error":
+              this.term.write(`\r\n[Serial error: ${data.message}]\r\n`);
+              break;
+            default:
+              console.debug("serial event:", event);
+          }
+        }
+        // 建立串口连接
+        await invoke("serial_connect", {
+          onEvent: onEvent,
+          sessionId: this.sessionId,
+          config: connectConfig
+        });
+        // Terminal 输入发送给串口
+        this.term.onData(data => {
+          if (this.closed) return;
+          const encoder = new TextEncoder();
+          invoke('serial_write', {
+            sessionId: this.sessionId,
+            data: data
+          }).catch(err => {
+            // TODO 这里的异常如何处理待考虑
+          })
+        });
+        // 调整窗体大小
+        await this.$nextTick()
+        this.fitAddon.fit()
+      } else {
+        // SSH 连接事件处理
+        onEvent.onmessage = ({ event, data }) => {
+          switch (event) {
+            case "data":
+            case "extendedData":
+              this.term.write(data.data);
+              break;
+            case "eof":
+            case "close":
+              this.term.write("\r\n[connection closed]\r\n");
+              this.term.blur();
+              this.disconnect();
+              break;
+            case "exitStatus":
+              this.term.write(`\r\n[process exited with code ${data.exitStatus}]\r\n`);
+              break;
+            case "exitSignal":
+              this.term.write(`\r\n[terminated by signal ${data.signalName}]\r\n`);
+              break;
+            case "openFailure":
+              this.term.write(`\r\n[channel open failed, code=${data.code}]\r\n`);
+              break;
+            default:
+              console.debug("ssh event:", event);
+          }
+        }
+        // 正式建立SSH连接
+        await invoke("ssh_connect", {
+          onEvent: onEvent,
+          sessionId: this.sessionId,
+          cols: 60,
+          rows: 40,
+          config: connectConfig
+        });
+        // Terminal 输入发送给 ssh
+        this.term.onData(data => {
+          if (this.closed) return;
+          invoke('ssh_run_command', {
+            sessionId: this.sessionId,
+            command: data
+          }).catch(err => {
+            // TODO 这里的异常如何处理待考虑
+          })
+        });
+
+        // 调整窗体大小
+        await this.$nextTick()
+        this.fitAddon.fit()
         invoke('ssh_window_change', {
           sessionId: this.sessionId,
-          colWidth: event.cols,
-          rowHeight: event.rows,
+          colWidth: this.term.cols,
+          rowHeight: this.term.rows,
         }).catch()
-      });
+        // Terminal resize 时通知 ssh
+        this.term.onResize((event) => {
+          invoke('ssh_window_change', {
+            sessionId: this.sessionId,
+            colWidth: event.cols,
+            rowHeight: event.rows,
+          }).catch()
+        });
+      }
       // 监听 Tauri 窗口大小变化
       window.addEventListener('resize', () => {
         this.updateTerminalSize()
@@ -190,7 +240,15 @@ export default {
     },
 
     pressKeyboard(code) {
-      this.writeCode(code)
+      if (this.session.config?.type === 'serial') {
+        const encoder = new TextEncoder();
+        invoke('serial_write', {
+          sessionId: this.sessionId,
+          data: Array.from(encoder.encode(code))
+        });
+      } else {
+        this.writeCode(code)
+      }
       this.term.scrollToBottom()
       this.term.focus()
       this.handleAutocomplete(code)

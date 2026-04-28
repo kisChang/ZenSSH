@@ -115,7 +115,7 @@ import {useTabsStore} from "@/store.js";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
-import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder} from "@element-plus/icons-vue";
+import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
 
 export default {
@@ -123,7 +123,7 @@ export default {
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, MobileSetting, MobileHost, TerminalTabs, ConnectManage, ServerMonitor},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, MobileSetting, MobileHost, TerminalTabs, ConnectManage, ServerMonitor},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -421,6 +421,16 @@ $text-sub: #94a3b8;
       .sftp-text {
         font-size: 8px;
         color: #67C23A;
+      }
+    }
+    .serial-indicator {
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      .serial-text {
+        font-size: 8px;
+        color: #E6A23C;
       }
     }
   }

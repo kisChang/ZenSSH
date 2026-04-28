@@ -10,7 +10,7 @@
         :key="item.id"
         :name="item.id">
       <template #label>
-        <template v-if="item.type === 'connect' || item.type === 'sftp'">
+        <template v-if="item.type === 'connect' || item.type === 'sftp' || item.type === 'serial'">
           <el-icon v-if="item.state === 0" color="#409EFF" class="is-loading"><Loading /></el-icon>
           <el-icon v-if="item.state === 1" color="#67C23A"><Link /></el-icon>
           <el-icon v-if="item.state === 2" color="#F40"><CircleCloseFilled/></el-icon>
@@ -30,7 +30,7 @@
         <setting-form />
       </div>
 
-      <terminal ref="xterm" v-else-if="item.type === 'connect'" :session="item"/>
+      <terminal ref="xterm" v-else-if="item.type === 'connect' || item.type === 'serial'" :session="item"/>
 
       <sftp-file-browser :ref="'sftp_' + item.sessionId" v-else-if="item.type === 'sftp'" :session="item"/>
     </el-tab-pane>
@@ -165,7 +165,9 @@ export default {
       e.stopPropagation()
     },
     async closeTerminal(sessionId) {
-      await invoke("ssh_close", {sessionId: sessionId});
+      const item = this.tabs.find(t => t.sessionId === sessionId);
+      const cmd = item?.config?.type === 'serial' ? 'serial_close' : 'ssh_close';
+      await invoke(cmd, {sessionId: sessionId});
     },
     showQuickConn() {
       this.$bus.emit('show-quick-connect')
