@@ -23,13 +23,11 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 ## Features
 
 * [x] SSH / SFTP / Jump Server
-* [x] Gist Sync for configuration
-* [x] Auto-update (Only PC)
-* [x] Port Forwarding
-* [x] Shell-specific keyboard with keyboard vibration
+* [x] Configuration sync support: Github\Gitee Gist
+* [x] Port Forwarding \Socks5 proxy
+* [x] Shell-specific keyboard
 * [x] Text file preview and editing
 * [x] Server monitoring (basic)
-* [x] Socks5 proxy
 
 ## Screenshot (Android)
 
