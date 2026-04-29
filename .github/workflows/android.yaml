@@ -90,6 +90,7 @@ jobs:
         if: matrix.mobile == 'android'
         run: |
           mv build/build.gradle.kts src-tauri/gen/android/app/build.gradle.kts
+          mv build/MainActivity.kt src-tauri/gen/android/app/src/main/java/io/kischang/zenssh/MainActivity.kt
 
       - name: Tauri Project
         uses: tauri-apps/tauri-action@dev

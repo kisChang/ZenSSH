@@ -4,7 +4,7 @@
 
     <div v-show="enableKeyboard" class="footer-keyboard">
       <keyboard @press="pressKeyboard"
-                @toggleKeyboard="updateTerminalSize"
+                @toggleKeyboard="keyboardChange"
                 @click.stop="()=>{}"/>
     </div>
 
@@ -153,7 +153,7 @@ export default {
           const encoder = new TextEncoder();
           invoke('serial_write', {
             sessionId: this.sessionId,
-            data: data
+            data: encoder.encode(data)
           }).catch(err => {
             // TODO 这里的异常如何处理待考虑
           })
@@ -297,6 +297,13 @@ export default {
       }
     },
 
+    keyboardChange(toKeyboard) {
+      let disableStdin = toKeyboard !== 1  // 非手机键盘
+      // 操作输入状态
+      this.term.options = { disableStdin: disableStdin }
+      this.term.textarea.readOnly = disableStdin
+      this.updateTerminalSize()
+    },
     updateTerminalSize() {
       if (!this.term || !this.fitAddon) return
       const footerHeight = (this.enableKeyboard ? 350 : 0);
@@ -306,7 +313,6 @@ export default {
         this.term.focus()
         this.fitAddon.fit()
         this.term.scrollToBottom()
-        this.$refs.terminal.scroll()
       })
     },
 
@@ -321,7 +327,6 @@ export default {
       // doc.addEventListener('mousedown', this.onMouseStart, { passive: true })
       // doc.addEventListener('mousemove', this.onTouchMove, { passive: false })
       // doc.addEventListener('mouseup', this.onTouchEnd, { passive: false })
-      window.term = this.term
     },
 
     unbindTouchEvents () {
@@ -477,7 +482,7 @@ export default {
 .terminal-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 70px);
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 30px);
 }
 
 .show-autocomplete {
