@@ -10,13 +10,14 @@
 </template>
 
 <script>
-import {listen} from '@tauri-apps/api/event'
+import {listen} from '@tauri-apps/api/event';
 import {appConfigStore, appRunState, useMngStore} from "@/store.js";
 import IndexMobile from "@/IndexMobile.vue";
 import IndexPc from "@/IndexPc.vue";
 import {isMobile} from "@/commons.js";
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
+import {invoke} from "@tauri-apps/api/core";
 
 export default {
   name: "Tauri",
@@ -71,10 +72,35 @@ export default {
     await this.$nextTick();
 
     // Rust 后端 全局事件监听
-    listen("ssh_close", event => {
+    await listen("ssh_close", event => {
       const {session_id, exit_status} = event.payload;
       this.$bus.emit("ssh_close_" + session_id, {session_id, exit_status});
-    }).catch()
+    })
+
+    // 监听主机密钥验证事件（在连接前设置好）
+    await listen("ssh_host_key", async (event) => {
+      const payload = event.payload;
+      const sessionId = payload.sessionId;
+      if (sessionId !== this.sessionId) return;
+
+      const fingerprint = payload.fingerprint;
+      try {
+        const message = `服务器主机密钥指纹：\n${fingerprint}\n\n密钥类型：${payload.keyType}\n\n是否信任此服务器并继续连接？`;
+        await this.$confirm(message, '主机密钥验证', {
+          confirmButtonText: '信任并继续',
+          cancelButtonText: '拒绝',
+          type: 'warning',
+          distinguishCancelAndClose: true,
+        });
+        // 用户点击确认
+        await invoke("ssh_respond_host_key", { fingerprint, accept: true });
+      } catch (action) {
+        // 用户点击拒绝或关闭对话框
+        if (action === 'cancel') {
+          await invoke("ssh_respond_host_key", { fingerprint, accept: false });
+        }
+      }
+    });
 
     this.initAppData().catch(err => {
       this.notify({message: "配置同步失败：" + err, type: "error"})

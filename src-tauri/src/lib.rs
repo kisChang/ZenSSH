@@ -37,6 +37,7 @@ pub fn run() {
         // 连接命令
         ssh::sync_config,
         ssh::ssh_connect,
+        ssh::ssh_respond_host_key,
         // 会话管理
         ssh::ssh_close,
         ssh::ssh_run_command,

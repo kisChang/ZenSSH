@@ -254,6 +254,23 @@ pub async fn ssh_connect(
     }
 }
 
+/// 响应用户对服务器主机密钥的确认/拒绝
+#[tauri::command]
+pub async fn ssh_respond_host_key(fingerprint: &str, accept: bool) -> Result<(), String> {
+    let tx = {
+        let mut map = HOST_KEY_CHANNEL.lock().unwrap();
+        map.remove(fingerprint)
+    };
+    if let Some(tx) = tx {
+        if tx.send(accept).is_err() {
+            return Err("Failed to send response, channel closed".to_string());
+        }
+        Ok(())
+    } else {
+        Err(format!("No pending host key verification for fingerprint: {}", fingerprint))
+    }
+}
+
 #[tauri::command]
 pub async fn ssh_run_command(session_id: &str, command: &str) -> Result<(), String> {
     let sess: Option<Arc<SshSession>> = {
@@ -405,17 +422,73 @@ pub fn sync_config(config_map: HashMap<String, SshConfig>) {
     info!("Sync: {:?}", map);
 }
 
-pub struct SshClient {}
+pub struct SshClient {
+    app: AppHandle,
+    session_id: String,
+}
+
+/// 存储主机键验证的响应通道（key: fingerprint）
+static HOST_KEY_CHANNEL: Lazy<Arc<Mutex<HashMap<String, tokio::sync::oneshot::Sender<bool>>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 impl client::Handler for SshClient {
     type Error = russh::Error;
 
     async fn check_server_key(
         &mut self,
-        _server_public_key: &ssh_key::PublicKey,
+        server_public_key: &ssh_key::PublicKey,
     ) -> Result<bool, Self::Error> {
-        Ok(true)
+        use ssh_key::HashAlg;
+
+        let fingerprint = server_public_key.fingerprint(HashAlg::Sha256).to_string();
+        let key_type_str = server_public_key.to_string().split_whitespace().next().unwrap_or("unknown").to_string();
+
+        info!("check_server_key: fingerprint={} key_type={} session={}", fingerprint, key_type_str, self.session_id);
+
+        // 发送主机密钥验证事件到前端
+        let _ = self.app.emit("ssh_host_key", SshHostKeyPayload {
+            session_id: self.session_id.clone(),
+            fingerprint: fingerprint.clone(),
+            key_type: key_type_str.clone(),
+        });
+
+        // 创建 oneshot 通道等待用户响应
+        let (tx, rx) = tokio::sync::oneshot::channel::<bool>();
+        {
+            let mut map = HOST_KEY_CHANNEL.lock().unwrap();
+            map.insert(fingerprint.clone(), tx);
+        }
+
+        // 等待用户响应（带超时）
+        match tokio::time::timeout(Duration::from_secs(60), rx).await {
+            Ok(Ok(accepted)) => {
+                if accepted {
+                    info!("Host key accepted for session {}", self.session_id);
+                    Ok(true)
+                } else {
+                    info!("Host key rejected for session {}", self.session_id);
+                    Err(russh::Error::Kex)
+                }
+            }
+            Ok(Err(_)) => {
+                // 通道被关闭，视为拒绝
+                Err(russh::Error::Kex)
+            }
+            Err(_) => {
+                // 超时
+                error!("Host key verification timed out for session {}", self.session_id);
+                Err(russh::Error::Kex)
+            }
+        }
     }
+}
+
+/// 主机密钥验证事件
+#[derive(Clone, serde::Serialize)]
+struct SshHostKeyPayload {
+    session_id: String,
+    fingerprint: String,
+    key_type: String,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -444,15 +517,20 @@ pub struct SshSession {
 
 impl SshSession {
     async fn connect_base(
+        app: AppHandle,
         config: &SshConfig,
         stream_opt: Option<ChannelStream<Msg>>,
+        session_id: String,
     ) -> Result<client::Handle<SshClient>> {
         let client_config = client::Config {
             keepalive_interval: Some(Duration::from_secs(config.keepalive_interval)),
             ..Default::default()
         };
 
-        let sh = SshClient {};
+        let sh = SshClient {
+            app,
+            session_id,
+        };
         let mut handle = if let Some(stream) = stream_opt {
             client::connect_stream(Arc::new(client_config), stream, sh).await?
         } else {
@@ -511,7 +589,7 @@ impl SshSession {
         rows: u32,
         on_event: tauri::ipc::Channel<SshChannelEvent>,
     ) -> Result<Self> {
-        let handle = Self::connect_base(config, None).await?;
+        let handle = Self::connect_base(app.clone(), config, None, session_id.clone()).await?;
         let channel = handle.channel_open_session().await?;
         channel
             .request_pty(true, "xterm", cols, rows, 0, 0, &[])
@@ -547,9 +625,10 @@ impl SshSession {
 
     /// 循环建立跳板连接 从最内层开始，逐层向外建立 SSH 跳板
     async fn connect_bastion_chain(
+        app: AppHandle,
         bastion_config: SshConfig,
+        session_id: String,
     ) -> anyhow::Result<client::Handle<SshClient>> {
-        info!("connect_bastion_chain");
         let mut chain = Vec::new();
         let mut current = bastion_config.bastion_config_id.clone();
         // 第一层
@@ -580,7 +659,7 @@ impl SshSession {
             let channel = match parent_client {
                 None => {
                     // 1. 登录最后一层 bastion
-                    Self::connect_base(&cfg, None).await?
+                    Self::connect_base(app.clone(), &cfg, None, session_id.clone()).await?
                 }
                 Some(bastion_handle) => {
                     // 2. 从外层 bastion → 上一层 bastion
@@ -592,7 +671,7 @@ impl SshSession {
                             0,
                         )
                         .await?;
-                    Self::connect_base(&cfg, Some(stream.into_stream())).await?
+                    Self::connect_base(app.clone(), &cfg, Some(stream.into_stream()), session_id.clone()).await?
                 }
             };
             parent_client = Option::from(channel);
@@ -616,7 +695,7 @@ impl SshSession {
         info!("Connect via bastion: {:?}", bastion_config);
         // 先建立跳板机会话(循环调用以实现多层叠甲)
         let bastion_handle =
-            Self::connect_bastion_chain(bastion_config.to_owned()).await?;
+            Self::connect_bastion_chain(app.clone(), bastion_config.to_owned(), session_id.clone()).await?;
 
         // 创建到目标机的通道
         let channel = bastion_handle
@@ -626,7 +705,7 @@ impl SshSession {
 
         // 建立目标链接
         let handle: russh::client::Handle<SshClient> =
-            Self::connect_base(config, Some(stream)).await?;
+            Self::connect_base(app.clone(), config, Some(stream), session_id.clone()).await?;
         let channel = handle.channel_open_session().await?;
         // 在通道上请求 PTY 和 shell
         channel
