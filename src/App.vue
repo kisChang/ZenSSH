@@ -11,7 +11,7 @@
 
 <script>
 import {listen} from '@tauri-apps/api/event';
-import {appConfigStore, appRunState, useMngStore} from "@/store.js";
+import {appConfigStore, appRunState, useMngStore, useHostKeyStore} from "@/store.js";
 import IndexMobile from "@/IndexMobile.vue";
 import IndexPc from "@/IndexPc.vue";
 import {isMobile} from "@/commons.js";
@@ -84,15 +84,25 @@ export default {
       if (sessionId !== this.sessionId) return;
 
       const fingerprint = payload.fingerprint;
+      const hostKeyStore = useHostKeyStore();
+
+      // 如果该指纹已确认过，直接接受
+      if (hostKeyStore.isConfirmed(fingerprint)) {
+        await invoke("ssh_respond_host_key", { fingerprint, accept: true });
+        return;
+      }
+
       try {
-        const message = `服务器主机密钥指纹：\n${fingerprint}\n\n密钥类型：${payload.keyType}\n\n是否信任此服务器并继续连接？`;
+        const message = `${fingerprint}<br/>是否信任此服务器并继续连接？`;
         await this.$confirm(message, '主机密钥验证', {
           confirmButtonText: '信任并继续',
           cancelButtonText: '拒绝',
           type: 'warning',
           distinguishCancelAndClose: true,
+          dangerouslyUseHTMLString: true,
         });
-        // 用户点击确认
+        // 用户点击确认，记录指纹
+        hostKeyStore.markConfirmed(fingerprint, payload.keyType);
         await invoke("ssh_respond_host_key", { fingerprint, accept: true });
       } catch (action) {
         // 用户点击拒绝或关闭对话框

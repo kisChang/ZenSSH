@@ -440,7 +440,12 @@ impl client::Handler for SshClient {
     ) -> Result<bool, Self::Error> {
         use ssh_key::HashAlg;
 
-        let fingerprint = server_public_key.fingerprint(HashAlg::Sha256).to_string();
+        // 将指纹格式化为标准 hex 格式（如 ab:cd:ef:01:...）
+        let fp_bytes = match server_public_key.fingerprint(HashAlg::Sha256) {
+            ssh_key::Fingerprint::Sha256(bytes) => bytes,
+            _ => [0u8; 32],
+        };
+        let fingerprint = fp_bytes.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(":");
         let key_type_str = server_public_key.to_string().split_whitespace().next().unwrap_or("unknown").to_string();
 
         info!("check_server_key: fingerprint={} key_type={} session={}", fingerprint, key_type_str, self.session_id);

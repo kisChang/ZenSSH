@@ -273,6 +273,28 @@ export const useMngStore = defineStore('UserConf', {
     },
 })
 
+export const useHostKeyStore = defineStore('HostKey', {
+    persist: true,
+    state: () => ({
+        // 已确认的主机密钥指纹，key 为 fingerprint，value 为 { keyType, timestamp }
+        confirmedKeys: {},
+    }),
+    actions: {
+        isConfirmed(fingerprint) {
+            return !!this.confirmedKeys[fingerprint];
+        },
+        markConfirmed(fingerprint, keyType) {
+            this.confirmedKeys[fingerprint] = {
+                keyType,
+                timestamp: Date.now(),
+            };
+        },
+        removeConfirmed(fingerprint) {
+            delete this.confirmedKeys[fingerprint];
+        },
+    },
+})
+
 export const useTabsStore = defineStore('counter', {
     state: () => ({
         connList: [],
