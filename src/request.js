@@ -1,6 +1,4 @@
 import axios from 'axios';
-// 不使用这个可以直接正常请求
-// import axiosTauriApiAdapter from 'axios-tauri-api-adapter';
+// 默认客户端
 export default axios.create({
-    // adapter: axiosTauriApiAdapter,
 });

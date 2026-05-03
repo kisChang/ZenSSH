@@ -71,7 +71,7 @@
             </el-scrollbar>
           </div>
 
-          <mobile-setting v-else-if="activeTab === 'setting'"/>
+          <mobile-setting v-else-if="activeTab === 'setting'" class="mobile-setting"/>
         </div>
       </transition>
     </main>
@@ -433,6 +433,12 @@ $text-sub: #94a3b8;
         color: #E6A23C;
       }
     }
+  }
+
+  /* 配置页面布局 */
+  .mobile-setting {
+    max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px);
+    overflow: scroll;
   }
 }
 

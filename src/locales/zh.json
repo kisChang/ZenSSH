@@ -86,6 +86,14 @@
     "gistsFileId": "配置ID",
     "gistsFileId_placeholder": "配置ID",
     "gistsLastSync": "同步状态",
-    "gistsLastSyncNo": "从未同步"
+    "gistsLastSyncNo": "从未同步",
+    "webdavUrl": "地址",
+    "webdavUrl_placeholder": "WebDAV服务器地址 (例如 https://example.com/dav/)",
+    "webdavUsername": "用户名",
+    "webdavUsername_placeholder": "WebDAV用户名",
+    "webdavPassword": "密码",
+    "webdavPassword_placeholder": "WebDAV密码",
+    "webdavLastSync": "同步状态",
+    "webdavLastSyncNo": "从未同步"
   }
 }

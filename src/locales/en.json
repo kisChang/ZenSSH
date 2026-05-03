@@ -86,6 +86,14 @@
     "gistsFileId": "Config ID",
     "gistsFileId_placeholder": "Configuration ID",
     "gistsLastSync": "Status",
-    "gistsLastSyncNo": "Never synced"
+    "gistsLastSyncNo": "Never synced",
+    "webdavUrl": "URL",
+    "webdavUrl_placeholder": "WebDAV server URL (e.g. https://example.com/dav/)",
+    "webdavUsername": "Username",
+    "webdavUsername_placeholder": "WebDAV username",
+    "webdavPassword": "Password",
+    "webdavPassword_placeholder": "WebDAV password",
+    "webdavLastSync": "Status",
+    "webdavLastSyncNo": "Never synced"
   }
 }

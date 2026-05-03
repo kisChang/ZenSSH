@@ -26,6 +26,7 @@
         <el-radio :value="0">{{ $t('common.disable') }}</el-radio>
         <el-radio :value="1">Gitee Gist</el-radio>
         <el-radio :value="2">Github Gist</el-radio>
+        <el-radio :value="3">WebDAV</el-radio>
       </el-radio-group>
     </el-form-item>
     <template v-if="settingForm.syncType === 1 || settingForm.syncType === 2">
@@ -41,6 +42,30 @@
             {{ settingForm.gistsLastSync }}
           </span>
           <span v-else>{{ $t('setting.gistsLastSyncNo') }}</span>
+        </div>
+        <div style="display: block;margin-left: 20px;">
+          <el-button :loading="syncConfigLoading" size="default" type="primary" @click="syncConfig">
+            {{ $t('setting.syncNow') }}
+          </el-button>
+        </div>
+      </el-form-item>
+    </template>
+    <template v-if="settingForm.syncType === 3">
+      <el-form-item :label="$t('setting.webdavUrl')" prop="webdavUrl">
+        <el-input v-model="settingForm.webdavUrl" :placeholder="$t('setting.webdavUrl_placeholder')" />
+      </el-form-item>
+      <el-form-item :label="$t('setting.webdavUsername')" prop="webdavUsername">
+        <el-input v-model="settingForm.webdavUsername" :placeholder="$t('setting.webdavUsername_placeholder')" />
+      </el-form-item>
+      <el-form-item :label="$t('setting.webdavPassword')" prop="webdavPassword">
+        <el-input v-model="settingForm.webdavPassword" type="password" show-password :placeholder="$t('setting.webdavPassword_placeholder')" />
+      </el-form-item>
+      <el-form-item :label="$t('setting.webdavLastSync')">
+        <div style="display: block;">
+          <span v-if="settingForm.webdavLastSync">
+            {{ settingForm.webdavLastSync }}
+          </span>
+          <span v-else>{{ $t('setting.webdavLastSyncNo') }}</span>
         </div>
         <div style="display: block;margin-left: 20px;">
           <el-button :loading="syncConfigLoading" size="default" type="primary" @click="syncConfig">
@@ -82,6 +107,15 @@ export default {
       settingRules: {
         gistsAccessToken: [
           { required: true, message: '请输入授权码', trigger: 'blur' },
+        ],
+        webdavUrl: [
+          { required: true, message: '请输入WebDAV地址', trigger: 'blur' },
+        ],
+        webdavUsername: [
+          { required: true, message: '请输入用户名', trigger: 'blur' },
+        ],
+        webdavPassword: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
         ],
       },
       syncConfigLoading: false,
@@ -133,8 +167,8 @@ export default {
         return;
       }
       this.syncConfigLoading = true
-      if (this.setting.gistsFileId) {
-        // 先尝试加载最后配置
+      if (this.setting.gistsFileId || this.setting.webdavLastSync) {
+        // 先尝试加载云端配置
         try {
           await this.setting.loadByCloud();
         }catch (error) {

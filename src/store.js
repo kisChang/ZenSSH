@@ -8,6 +8,7 @@ import {
 } from "@/utils/plugin-keyring.js";
 import {CONSTANT, genId} from "@/commons.js";
 import client from "@/request.js"
+import {webdavGet, webdavPut} from "@/utils/webdav.js";
 
 // config 前缀 k_
 // session 前缀 s_
@@ -74,6 +75,12 @@ export const appConfigStore = defineStore('AppConf', {
         gistsFileId: null,
         gistsLastSync: null,
 
+        // WebDAV 同步
+        webdavUrl: null,
+        webdavUsername: null,
+        webdavPassword: null,
+        webdavLastSync: null,
+
         // 虚拟键盘配置
         virtualKeyboardVibrate: 0,
     }),
@@ -83,6 +90,10 @@ export const appConfigStore = defineStore('AppConf', {
             this.gistsAccessToken = setting.gistsAccessToken
             this.gistsFileId = setting.gistsFileId
             this.gistsLastSync = setting.gistsLastSync
+            this.webdavUrl = setting.webdavUrl
+            this.webdavUsername = setting.webdavUsername
+            this.webdavPassword = setting.webdavPassword
+            this.webdavLastSync = setting.webdavLastSync
             this.virtualKeyboardVibrate = setting.virtualKeyboardVibrate
             this.locale = setting.locale
         },
@@ -104,55 +115,76 @@ export const appConfigStore = defineStore('AppConf', {
             let contentEncrypted = res[0];
             let nonce = res[1];
 
-            //2. 生成存储数据
-            let files = {
-                'SyncCloud.json': {
-                    content: JSON.stringify({
-                        content: contentEncrypted,
-                        nonce: nonce,
-                        salt: salt,
-                    }),
-                }
-            }
+            //3. 生成存储数据
+            let payload = JSON.stringify({
+                content: contentEncrypted,
+                nonce: nonce,
+                salt: salt,
+            })
 
-            //3. 生成请求参数
-            const url = ["", "https://gitee.com/api/v5/gists", "https://api.github.com/gists"][this.syncType]
-            const headers = {
-                headers: {
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": "Bearer " + this.gistsAccessToken,
-                    "X-GitHub-Api-Version": "2022-11-28",
-                }
-            }
-
-            //4. 请求同步
             const time = new Date().toLocaleString()
-            if (that.gistsFileId) {
-                // 注：必须同步更新description
-                const res = await client.patch(url + "/" + that.gistsFileId, {
-                    access_token: that.gistsAccessToken,
-                    files: files,
-                    description: 'ZenSSH Sync @' + time,
-                    id: that.gistsFileId
-                }, headers)
-                if (res.status === 200) {
-                    that.gistsFileId = res.data.id
-                    that.gistsLastSync = time
-                } else {
-                    throw new Error("同步请求失败，错误码：" + res.status + " " + res.statusText);
+
+            //4. 根据同步类型请求
+            if (this.syncType === 3) {
+                // WebDAV 同步
+                const webdavFullUrl = this.webdavUrl.replace(/\/+$/, '') + '/ZenSSH_SyncCloud.json'
+                try {
+                    const uploadRes = await webdavPut(webdavFullUrl, this.webdavUsername, this.webdavPassword, payload)
+                    if (uploadRes.status === 200 || uploadRes.status === 201 || uploadRes.status === 204) {
+                        that.webdavLastSync = time
+                    } else {
+                        throw new Error("同步请求失败，错误码：" + uploadRes.status + " " + uploadRes.statusText);
+                    }
+                } catch (e) {
+                    console.log(e)
+                    if (e.response) {
+                        throw new Error(`WebDAV同步失败: ${e.response.status} ${e.response.statusText}`);
+                    }
+                    throw new Error(`WebDAV同步失败: ${e.message}`);
                 }
             } else {
-                const res = await client.post(url, {
-                    access_token: that.gistsAccessToken,
-                    files: files,
-                    description: 'ZenSSH Sync @' + time,
-                    public: false,
-                }, headers)
-                if (res.status === 201) {
-                    that.gistsFileId = res.data.id
-                    that.gistsLastSync = time
+                // Gist 同步 (1=Gitee, 2=Github)
+                let files = {
+                    'SyncCloud.json': {
+                        content: payload,
+                    }
+                }
+                const url = ["", "https://gitee.com/api/v5/gists", "https://api.github.com/gists"][this.syncType]
+                const headers = {
+                    headers: {
+                        "Accept": "application/vnd.github+json",
+                        "Authorization": "Bearer " + this.gistsAccessToken,
+                        "X-GitHub-Api-Version": "2022-11-28",
+                    }
+                }
+
+                if (that.gistsFileId) {
+                    // 注：必须同步更新description
+                    const res = await client.patch(url + "/" + that.gistsFileId, {
+                        access_token: that.gistsAccessToken,
+                        files: files,
+                        description: 'ZenSSH Sync @' + time,
+                        id: that.gistsFileId
+                    }, headers)
+                    if (res.status === 200) {
+                        that.gistsFileId = res.data.id
+                        that.gistsLastSync = time
+                    } else {
+                        throw new Error("同步请求失败，错误码：" + res.status + " " + res.statusText);
+                    }
                 } else {
-                    throw new Error("同步请求失败，错误码：" + res.status + " " + res.statusText);
+                    const res = await client.post(url, {
+                        access_token: that.gistsAccessToken,
+                        files: files,
+                        description: 'ZenSSH Sync @' + time,
+                        public: false,
+                    }, headers)
+                    if (res.status === 201) {
+                        that.gistsFileId = res.data.id
+                        that.gistsLastSync = time
+                    } else {
+                        throw new Error("同步请求失败，错误码：" + res.status + " " + res.statusText);
+                    }
                 }
             }
         },
@@ -161,22 +193,42 @@ export const appConfigStore = defineStore('AppConf', {
                 return false
             }
             let userPass = await appRunState().keyringGet();
+            let cloudJson
 
-            let syncUrl = this.syncType === 1 ? 'https://gitee.com/api/v5/gists/' : 'https://api.github.com/gists/'
-            syncUrl = syncUrl + this.gistsFileId +
-                // 兼容gitee的参数
-                "?access_token=" + this.gistsAccessToken
-                + "&id=" + this.gistsFileId
-                + "&time=" + new Date().getTime();
-            const headers = { // 兼容github 的请求头
-                "Accept": "application/vnd.github+json",
-                "Authorization": "Bearer " + this.gistsAccessToken,
-                "X-GitHub-Api-Version": "2022-11-28",
+            if (this.syncType === 3) {
+                // WebDAV 同步
+                const webdavFullUrl = this.webdavUrl.replace(/\/+$/, '') + '/ZenSSH_SyncCloud.json'
+                let res
+                try {
+                    res = await webdavGet(webdavFullUrl, this.webdavUsername, this.webdavPassword)
+                } catch (e) {
+                    if (e.response && e.response.status === 404) {
+                        throw new Error("云端没有同步文件，请先在本地执行一次同步再使用。");
+                    }
+                    if (e.response) {
+                        throw new Error(`WebDAV加载失败: ${e.response.status} ${e.response.statusText}`);
+                    }
+                    throw new Error(`WebDAV加载失败: ${e.message}`);
+                }
+                cloudJson = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+            } else {
+                // Gist 同步 (1=Gitee, 2=Github)
+                let syncUrl = this.syncType === 1 ? 'https://gitee.com/api/v5/gists/' : 'https://api.github.com/gists/'
+                syncUrl = syncUrl + this.gistsFileId +
+                    // 兼容gitee的参数
+                    "?access_token=" + this.gistsAccessToken
+                    + "&id=" + this.gistsFileId
+                    + "&time=" + new Date().getTime();
+                const headers = { // 兼容github 的请求头
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": "Bearer " + this.gistsAccessToken,
+                    "X-GitHub-Api-Version": "2022-11-28",
+                }
+
+                const res = await client.get(syncUrl, {headers: headers})
+                cloudJson = JSON.parse(res.data.files['SyncCloud.json'].content)
             }
 
-            // 加载并解密数据
-            const res = await client.get(syncUrl, {headers: headers})
-            const cloudJson = JSON.parse(res.data.files['SyncCloud.json'].content)
             // 通过加密salt 获取真实密钥
             let keyB64 = await invoke("encrypt_derive_key", {password: userPass, salt: cloudJson.salt});
             const decrypt = await invoke("encrypt_decrypt_data", {
@@ -200,7 +252,12 @@ export const appConfigStore = defineStore('AppConf', {
                 ...localContent,
                 configList: mergedList
             };
-            this.gistsLastSync = new Date(res.data.updated_at).toLocaleString()
+
+            if (this.syncType === 3) {
+                this.webdavLastSync = new Date().toLocaleString()
+            } else {
+                this.gistsLastSync = new Date(res.data.updated_at).toLocaleString()
+            }
             return true
         },
     }
