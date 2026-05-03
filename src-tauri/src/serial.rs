@@ -1,18 +1,17 @@
 use anyhow::{bail, Result};
 use log::{error, info, warn};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::LazyLock;
+use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
 /// 串口会话管理（key: session_id）
-static SERIAL_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SerialSession>>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static SERIAL_MAP: LazyLock<Mutex<HashMap<String, Arc<SerialSession>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// 串口连接配置
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -84,8 +83,12 @@ struct SerialClosePayload {
     session_id: String,
 }
 
-/// 将前端配置转换为 serialport 配置
-fn build_serial_port(config: &SerialConfig) -> Result<Box<dyn SerialPort>> {
+use mio_serial::{
+    DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits,
+};
+
+/// 将前端配置转换为 mio-serial 的 builder
+fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortBuilder> {
     let data_bits = match config.data_bits {
         5 => DataBits::Five,
         6 => DataBits::Six,
@@ -114,35 +117,30 @@ fn build_serial_port(config: &SerialConfig) -> Result<Box<dyn SerialPort>> {
         _ => bail!("Invalid flow_control: {}", config.flow_control),
     };
 
-    let builder = serialport::new(&config.port_name, config.baud_rate)
+    Ok(mio_serial::new(&config.port_name, config.baud_rate)
         .data_bits(data_bits)
         .parity(parity)
         .stop_bits(stop_bits)
-        .flow_control(flow_control)
-        .timeout(Duration::from_millis(config.timeout));
-
-    let port = builder.open()?;
-    Ok(port)
+        .flow_control(flow_control))
 }
 
 /// 串口会话
-#[allow(dead_code)]
 pub struct SerialSession {
     /// 会话 ID
     pub session_id: String,
     /// 串口设备路径
     pub port_name: String,
-    /// 串口设备（线程安全）
-    port: Arc<Mutex<Option<Box<dyn SerialPort>>>>,
-    /// 关闭信号发送端
-    shutdown_tx: tokio::sync::watch::Sender<bool>,
-    /// 读取线程句柄（使用 Mutex 支持内部可变性）
-    read_thread: Mutex<Option<thread::JoinHandle<()>>>,
+    /// 串口设备（使用 Arc<Mutex> 保护，供读取和写入共享）
+    port: Arc<Mutex<Option<SerialStream>>>,
+    /// 关闭标志
+    closed: AtomicBool,
+    /// 后台读取任务句柄
+    read_handle: Mutex<Option<tokio::task::JoinHandle<()>>>,
 }
 
 impl SerialSession {
     /// 创建并初始化串口会话
-    pub fn new(
+    pub async fn new(
         app: AppHandle,
         config: SerialConfig,
         session_id: String,
@@ -153,115 +151,100 @@ impl SerialSession {
             config.port_name, config.baud_rate
         );
 
-        let port = build_serial_port(&config)?;
+        let builder = build_serial_builder(&config)?;
+        let port = builder.open_native_async()?;
         let port_name = config.port_name.clone();
 
         // 发送连接成功事件
         let _ = on_event.send(SerialChannelEvent::Connected);
 
-        let port_arc: Arc<Mutex<Option<Box<dyn SerialPort>>>> =
-            Arc::new(Mutex::new(Some(port)));
-        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+        let port_mutex = Arc::new(Mutex::new(Some(port)));
+        let closed = AtomicBool::new(false);
 
-        // 启动后台读取线程
-        let read_thread = Self::spawn_read_loop(
+        // 启动后台异步读取任务
+        let read_handle = Self::spawn_read_loop(
             app,
-            port_arc.clone(),
+            port_mutex.clone(),
             session_id.clone(),
             on_event,
-            shutdown_rx,
         );
 
         Ok(SerialSession {
             session_id,
             port_name,
-            port: port_arc,
-            shutdown_tx,
-            read_thread: Mutex::new(Some(read_thread)),
+            port: port_mutex,
+            closed,
+            read_handle: Mutex::new(Some(read_handle)),
         })
     }
 
-    /// 启动后台读取循环（使用独立线程处理阻塞 I/O）
+    /// 启动后台异步读取循环
     fn spawn_read_loop(
         app: AppHandle,
-        port: Arc<Mutex<Option<Box<dyn SerialPort>>>>,
+        port: Arc<Mutex<Option<SerialStream>>>,
         session_id: String,
         on_event: tauri::ipc::Channel<SerialChannelEvent>,
-        shutdown_rx: tokio::sync::watch::Receiver<bool>,
-    ) -> thread::JoinHandle<()> {
-        let sess_id = session_id.clone();
-        thread::spawn(move || {
-            let mut buffer = vec![0u8; 4096];
-
+    ) -> tokio::task::JoinHandle<()> {
+        tokio::spawn(async move {
             loop {
-                // 检查是否收到关闭信号
-                if *shutdown_rx.borrow() {
-                    info!("Serial read loop exiting due to shutdown signal: {}", sess_id);
-                    break;
-                }
-
-                // 获取端口读取锁
-                let read_result = {
-                    let mut port_guard = port.lock().unwrap();
-                    match port_guard.as_mut() {
-                        Some(port) => port.read(&mut buffer),
-                        None => break, // 端口已被移除
-                    }
-                };
-
-                match read_result {
-                    Ok(n) if n > 0 => {
-                        let data: Vec<u8> = buffer[..n].to_vec();
-                        if let Err(e) = on_event.send(SerialChannelEvent::Data { data }) {
-                            error!("Failed to send serial data event: {:?}", e);
-                            break;
+                // 通过 spawn_blocking 在非阻塞端口上执行读取，避免 busy-loop
+                let result = tokio::task::spawn_blocking({
+                    let port = port.clone();
+                    move || {
+                        let mut buffer = vec![0u8; 4096];
+                        let mut port_guard = port.try_lock().ok()?;
+                        let port_ref = port_guard.as_mut()?;
+                        // SerialStream 是 O_NONBLOCK 的，read 会立即返回
+                        // 如果无数据则返回 WouldBlock，此时返回 None 让外层 sleep
+                        match port_ref.read(&mut buffer) {
+                            Ok(n) if n > 0 => Some(Ok((n, buffer))),
+                            Ok(_) => None, // n == 0
+                            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => None,
+                            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => None,
+                            Err(e) => Some(Err(e)),
                         }
                     }
-                    Ok(_) => {
-                        // n == 0，读取超时，继续循环
+                })
+                .await
+                .unwrap_or(None);
+
+                match result {
+                    Some(Ok((n, data))) => {
+                        let _ = on_event.send(SerialChannelEvent::Data {
+                            data: data[..n].to_vec(),
+                        });
                     }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                        // 超时是预期行为，继续循环
-                    }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => {
-                        // 中断，继续循环
-                    }
-                    Err(e) => {
-                        // 其他错误（断开的管道、设备不存在等）
-                        warn!("Serial read error on {}: {}", sess_id, e);
+                    Some(Err(e)) => {
+                        warn!("Serial read error on {}: {}", session_id, e);
                         let _ = on_event.send(SerialChannelEvent::Error {
                             message: e.to_string(),
                         });
-
-                        // 检查是否为致命错误
-                        if e.kind() == std::io::ErrorKind::NotFound
-                            || e.kind() == std::io::ErrorKind::BrokenPipe
-                        {
-                            break;
-                        }
+                        break;
+                    }
+                    None => {
+                        // No data or WouldBlock — sleep briefly before retrying
+                        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
                     }
                 }
             }
 
-            // 读取循环结束，发送关闭事件
-            info!("Serial connection closed: {}", sess_id);
+            info!("Serial connection closed: {}", session_id);
             let _ = on_event.send(SerialChannelEvent::Closed);
             let _ = app.emit(
                 "serial_close",
                 SerialClosePayload {
                     message: "connection closed".into(),
-                    session_id: sess_id.clone(),
+                    session_id: session_id.clone(),
                 },
             );
         })
     }
 
     /// 向串口写入数据
-    pub fn write(&self, data: &[u8]) -> Result<usize> {
-        let mut port_guard = self.port.lock().unwrap();
+    pub async fn write(&self, data: &[u8]) -> Result<usize> {
+        let mut port_guard = self.port.lock().await;
         match port_guard.as_mut() {
             Some(port) => {
-                // serialport 的 write 可能不会写入全部数据
                 let mut written = 0;
                 while written < data.len() {
                     let n = port.write(&data[written..])?;
@@ -281,21 +264,21 @@ impl SerialSession {
     }
 
     /// 关闭串口连接
-    pub fn close(&self) -> Result<()> {
+    pub async fn close(&self) -> Result<()> {
         info!("Closing serial session: {}", self.session_id);
 
-        // 发送关闭信号
-        let _ = self.shutdown_tx.send(true);
+        // 设置关闭标志
+        self.closed.store(true, Ordering::Relaxed);
 
-        // 释放端口（读取线程检测到后会退出）
+        // 释放端口（读取任务检测到 None 后会退出）
         {
-            let mut port_guard = self.port.lock().unwrap();
+            let mut port_guard = self.port.lock().await;
             *port_guard = None;
         }
 
-        // 等待读取线程结束
-        if let Some(handle) = self.read_thread.lock().unwrap().take() {
-            let _ = handle.join();
+        // 等待读取任务结束
+        if let Some(handle) = self.read_handle.lock().await.take() {
+            let _ = handle.await;
         }
 
         info!("Serial session closed: {}", self.session_id);
@@ -321,7 +304,7 @@ pub fn serial_list() -> Result<Vec<SerialPortInfo>, String> {
 
 /// 建立串口连接
 #[tauri::command]
-pub fn serial_connect(
+pub async fn serial_connect(
     app: AppHandle,
     config: SerialConfig,
     session_id: String,
@@ -329,11 +312,11 @@ pub fn serial_connect(
 ) -> Result<String, String> {
     info!("Connecting serial port: {:?}", config);
 
-    match SerialSession::new(app, config, session_id.clone(), on_event) {
+    match SerialSession::new(app, config, session_id.clone(), on_event).await {
         Ok(session) => {
             SERIAL_MAP
                 .lock()
-                .unwrap()
+                .await
                 .insert(session_id.clone(), Arc::new(session));
             info!("Serial connected: {}", session_id);
             Ok(session_id)
@@ -347,28 +330,35 @@ pub fn serial_connect(
 
 /// 向串口写入数据
 #[tauri::command]
-pub fn serial_write(session_id: &str, data: Vec<u8>) -> Result<usize, String> {
+pub async fn serial_write(session_id: &str, data: Vec<u8>) -> Result<usize, String> {
     let session: Option<Arc<SerialSession>> = {
-        let map = SERIAL_MAP.lock().unwrap();
+        let map = SERIAL_MAP.lock().await;
         map.get(session_id).cloned()
     };
 
     match session {
-        Some(sess) => sess.write(&data).map_err(|e| e.to_string()),
+        Some(sess) => sess.write(&data).await.map_err(|e| e.to_string()),
         None => Err("Session not found".to_string()),
     }
 }
 
 /// 关闭串口连接
 #[tauri::command]
-pub fn serial_close(session_id: &str) -> Result<(), String> {
+pub async fn serial_close(app: AppHandle, session_id: &str) -> Result<(), String> {
     let session: Option<Arc<SerialSession>> = {
-        let mut map = SERIAL_MAP.lock().unwrap();
+        let mut map = SERIAL_MAP.lock().await;
         map.remove(session_id)
     };
 
     if let Some(sess) = session {
-        let _ = sess.close();
+        let _ = sess.close().await;
+        let _ = app.emit(
+            "serial_close",
+            SerialClosePayload {
+                message: "connection closed".into(),
+                session_id: session_id.to_string(),
+            },
+        );
     }
 
     Ok(())

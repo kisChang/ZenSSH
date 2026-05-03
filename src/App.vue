@@ -74,7 +74,11 @@ export default {
     // Rust 后端 全局事件监听
     await listen("ssh_close", event => {
       const {session_id, exit_status} = event.payload;
-      this.$bus.emit("ssh_close_" + session_id, {session_id, exit_status});
+      this.$bus.emit("connect_close_" + session_id, {session_id, exit_status});
+    })
+    await listen("serial_close", event => {
+      const {session_id, message} = event.payload;
+      this.$bus.emit("connect_close_" + session_id, {session_id, exit_status: 0});
     })
 
     // 监听主机密钥验证事件（在连接前设置好）

@@ -59,7 +59,7 @@ export default {
     }
     this.connect().then(() => {
       this.tabStore.connectSuccess(this.sessionId);
-      this.$bus.on("ssh_close_" + this.sessionId, () => {
+      this.$bus.on("connect_close_" + this.sessionId, () => {
         this.disconnect();
       });
       this.updateTerminalSize();
@@ -122,7 +122,7 @@ export default {
         onEvent.onmessage = ({ event, data }) => {
           switch (event) {
             case "connected":
-              this.term.write("[Serial connected]\r\n");
+              // this.term.write("[Serial connected]\r\n");
               break;
             case "data":
               const uint8 = new Uint8Array(data.data);

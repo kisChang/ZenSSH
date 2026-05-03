@@ -10,6 +10,8 @@ dependencies = [
  "bytes",
  "data-encoding",
  "log",
+ "mio",
+ "mio-serial",
  "once_cell",
  "rand 0.10.1",
  "ring",
@@ -3280,8 +3282,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50b7e5b27aa02a74bac8c3f23f448f8d87ff11f92d3aac1a6ed369ee08cc56c1"
 dependencies = [
  "libc",
+ "log",
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "mio-serial"
+version = "5.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "029e1f407e261176a983a6599c084efd322d9301028055c87174beac71397ba3"
+dependencies = [
+ "log",
+ "mio",
+ "nix 0.29.0",
+ "serialport",
+ "winapi",
 ]
 
 [[package]]
@@ -3383,6 +3399,18 @@ checksum = "598beaf3cc6fdd9a5dfb1630c2800c7acd31df7aaf0f565796fba2b53ca1af1b"
 dependencies = [
  "bitflags 1.3.2",
  "cfg-if",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if",
+ "cfg_aliases",
  "libc",
 ]
 

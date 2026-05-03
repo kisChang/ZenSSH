@@ -30,7 +30,7 @@
         <setting-form />
       </div>
 
-      <terminal ref="xterm" v-else-if="item.type === 'connect' || item.type === 'serial'" :session="item"/>
+      <terminal :ref="'xterm_' + item.sessionId" v-else-if="item.type === 'connect' || item.type === 'serial'" :session="item"/>
 
       <sftp-file-browser :ref="'sftp_' + item.sessionId" v-else-if="item.type === 'sftp'" :session="item"/>
     </el-tab-pane>
@@ -165,9 +165,9 @@ export default {
       e.stopPropagation()
     },
     async closeTerminal(sessionId) {
-      const item = this.tabs.find(t => t.sessionId === sessionId);
-      const cmd = item?.config?.type === 'serial' ? 'serial_close' : 'ssh_close';
-      await invoke(cmd, {sessionId: sessionId});
+      if (this.tabs.find(t => t.sessionId === sessionId)) {
+        this.$refs['xterm_' + sessionId][0].disconnect()
+      }
     },
     showQuickConn() {
       this.$bus.emit('show-quick-connect')
