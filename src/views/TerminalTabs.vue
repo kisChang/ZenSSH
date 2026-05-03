@@ -104,7 +104,7 @@ export default {
     activeTab: {
       handler(newVal) {
         const item = this.tabs.find(v => v.id === newVal);
-        this.$emit('tab-change', item?.sessionId || null);
+        this.$emit('tab-change', item?.sessionId || null, item);
       },
     },
   },

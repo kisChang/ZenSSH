@@ -46,9 +46,9 @@
         <connect-manage ref="connectManage"/>
       </el-splitter-panel>
       <el-splitter-panel :min="200">
-        <div class="terminal-panel">
-          <terminal-tabs ref="terminalTabs" @tab-change="activeSessionId = $event"/>
-          <div class="status-bar" v-if="activeSessionId">
+        <div class="terminal-panel" :class="showStatusBar ? 'terminal-panel' : 'terminal-panel no_bar'">
+          <terminal-tabs ref="terminalTabs" @tab-change="tabChange"/>
+          <div class="status-bar" v-if="showStatusBar">
             <server-monitor :session-id="activeSessionId"/>
           </div>
         </div>
@@ -72,6 +72,11 @@ export default {
   props: {
     isLoading: false,
   },
+  computed: {
+    showStatusBar() {
+      return this.activeSessionId && this.activeSessionType === 'ssh'
+    }
+  },
   data() {
     return {
       asideSize: 200,
@@ -79,12 +84,17 @@ export default {
       showUpdater: false,
       update: null,
       activeSessionId: null,
+      activeSessionType: null,
     }
   },
   mounted() {
     this.handleCheckUpdate();
   },
   methods: {
+    tabChange(tab, item) {
+      this.activeSessionId = tab;
+      this.activeSessionType = item?.config?.type;
+    },
     handleCheckUpdate(byUser) {
       check().then(update => {
         if (update) {
@@ -184,6 +194,12 @@ export default {
   }
   :deep(.terminal-container) {
     height: calc(100vh - 90px);
+  }
+  &.no_bar {
+    height: calc(100vh);
+    :deep(.terminal-container) {
+      height: calc(100vh - 60px);
+    }
   }
 }
 
