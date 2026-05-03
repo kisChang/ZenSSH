@@ -51,7 +51,7 @@
                     <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
                     <span class="sftp-text">SFTP</span>
                   </div>
-                  <div v-if="item.type === 'connect' && item.state === 1" class="monitor-indicator">
+                  <div v-if="item.config.type === 'ssh' && item.state === 1" class="monitor-indicator">
                     <server-monitor :session-id="item.sessionId"/>
                   </div>
                   <div v-if="item.config?.portForwards?.length" class="port-forward-list">
