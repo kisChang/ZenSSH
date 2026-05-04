@@ -194,11 +194,11 @@ export const appConfigStore = defineStore('AppConf', {
             }
             let userPass = await appRunState().keyringGet();
             let cloudJson
+            let res
 
             if (this.syncType === 3) {
                 // WebDAV 同步
                 const webdavFullUrl = this.webdavUrl.replace(/\/+$/, '') + '/ZenSSH_SyncCloud.json'
-                let res
                 try {
                     res = await webdavGet(webdavFullUrl, this.webdavUsername, this.webdavPassword)
                 } catch (e) {
@@ -225,7 +225,7 @@ export const appConfigStore = defineStore('AppConf', {
                     "X-GitHub-Api-Version": "2022-11-28",
                 }
 
-                const res = await client.get(syncUrl, {headers: headers})
+                res = await client.get(syncUrl, {headers: headers})
                 cloudJson = JSON.parse(res.data.files['SyncCloud.json'].content)
             }
 
