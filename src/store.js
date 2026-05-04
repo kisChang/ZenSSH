@@ -22,6 +22,17 @@ function mergeList(list1 = [], list2 = [], keyName) {
     return Array.from(map.values());
 }
 
+// 合并删除标记，同 configId 保留最新时间
+function mergeDeletedIds(ids1 = [], ids2 = []) {
+    const map = new Map();
+    [...ids1, ...ids2].forEach(item => {
+        if (!map.has(item.configId) || map.get(item.configId).deletedAt < item.deletedAt) {
+            map.set(item.configId, item);
+        }
+    });
+    return Array.from(map.values());
+}
+
 export const appRunState = defineStore('AppRunningState', {
     persist: false,
     state: () => ({
@@ -83,6 +94,9 @@ export const appConfigStore = defineStore('AppConf', {
 
         // 虚拟键盘配置
         virtualKeyboardVibrate: 0,
+
+        // 删除标记，用于多端同步删除
+        deletedIds: [],
     }),
     actions: {
         saveSetting(setting) {
@@ -96,10 +110,32 @@ export const appConfigStore = defineStore('AppConf', {
             this.webdavLastSync = setting.webdavLastSync
             this.virtualKeyboardVibrate = setting.virtualKeyboardVibrate
             this.locale = setting.locale
+            this.deletedIds = setting.deletedIds || []
+        },
+        /**
+         * 记录删除标记，用于多端同步删除
+         */
+        recordDeletion(configId) {
+            // 如果已存在删除记录，更新时间戳
+            const existing = this.deletedIds.find(d => d.configId === configId);
+            if (existing) {
+                existing.deletedAt = Date.now();
+            } else {
+                this.deletedIds.push({ configId, deletedAt: Date.now() });
+            }
+        },
+        /**
+         * 清理超过 N 天的删除标记，防止数据无限膨胀
+         */
+        cleanupDeletedIds(days = 90) {
+            const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+            this.deletedIds = this.deletedIds.filter(d => d.deletedAt >= cutoff);
         },
         async syncToCloud() {
             //0. 处理需要同步的数据
             let confData = JSON.parse(JSON.stringify(useMngStore().$state));
+            // 加入删除标记，供其他客户端同步删除
+            confData.deletedIds = this.deletedIds;
             // 清理不需要的数据
             for (let config of confData.configList) {
                 delete config.isCloud
@@ -241,6 +277,14 @@ export const appConfigStore = defineStore('AppConf', {
             const cloudContent = JSON.parse(decrypt);
             const localContent = useMngStore().$state
             let mergedList = mergeList(cloudContent.configList, localContent.configList, 'configId')
+
+            // 合并删除标记（云端 + 本地）
+            const cloudDeletedIds = cloudContent.deletedIds || [];
+            const mergedDeletedIds = mergeDeletedIds(cloudDeletedIds, this.deletedIds);
+            // 用删除标记过滤已删除的条目
+            const deletedIdSet = new Set(mergedDeletedIds.map(d => d.configId));
+            mergedList = mergedList.filter(item => !deletedIdSet.has(item.configId));
+
             // 标记本地/云端
             const localIds = new Set(cloudContent.configList.map(item => item.configId));
             mergedList = mergedList.map(item => ({
@@ -252,6 +296,10 @@ export const appConfigStore = defineStore('AppConf', {
                 ...localContent,
                 configList: mergedList
             };
+
+            // 更新本地删除标记并清理过期记录
+            this.deletedIds = mergedDeletedIds;
+            this.cleanupDeletedIds();
 
             if (this.syncType === 3) {
                 this.webdavLastSync = new Date().toLocaleString()
@@ -303,8 +351,12 @@ export const useMngStore = defineStore('UserConf', {
             }
         },
         removeConfig(id) {
+            // 记录删除标记（tombstone），供多端同步时传播删除操作
+            appConfigStore().recordDeletion(id)
             this.configList = this.configList.filter(item => item.configId !== id)
             this.syncConfig(this.configList).then()
+            // 同步到云端，将删除标记传播给其他客户端
+            appConfigStore().syncToCloud().catch(() => {})
         },
         updateConfig(config) {
             this.normalizeConfig(config);
