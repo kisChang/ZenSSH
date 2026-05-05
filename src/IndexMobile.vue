@@ -51,7 +51,11 @@
                     <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
                     <span class="sftp-text">SFTP</span>
                   </div>
-                  <div v-if="item.config.type === 'ssh' && item.state === 1" class="monitor-indicator">
+                  <div v-if="item.config?.type === 'serial' && item.state === 1" class="serial-indicator">
+                    <el-icon :size="10" color="#E6A23C"><Cpu /></el-icon>
+                    <span class="serial-text">Serial</span>
+                  </div>
+                  <div v-if="item.config?.type === 'ssh' && item.state === 1" class="monitor-indicator">
                     <server-monitor :session-id="item.sessionId"/>
                   </div>
                   <div v-if="item.config?.portForwards?.length" class="port-forward-list">

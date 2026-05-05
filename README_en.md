@@ -22,9 +22,9 @@ The goal of this project is to meet daily SSH usage needs **while keeping it lig
 
 ## Features
 
-* [x] SSH / SFTP / Jump Server
-* [x] Configuration sync support: Github\Gitee Gist
-* [x] Port Forwarding \Socks5 proxy
+* [x] SSH / SFTP / Jump Server / Serial
+* [x] Configuration sync support: Github\Gitee Gist\WebDav
+* [x] Port Forwarding \ Socks5 proxy
 * [x] Shell-specific keyboard
 * [x] Text file preview and editing
 * [x] Server monitoring (basic)
