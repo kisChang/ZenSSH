@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::LazyLock;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
@@ -118,6 +119,7 @@ fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortB
     };
 
     Ok(mio_serial::new(&config.port_name, config.baud_rate)
+        .timeout(Duration::from_millis(config.timeout))
         .data_bits(data_bits)
         .parity(parity)
         .stop_bits(stop_bits)
@@ -128,8 +130,6 @@ fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortB
 pub struct SerialSession {
     /// 会话 ID
     pub session_id: String,
-    /// 串口设备路径
-    pub port_name: String,
     /// 串口设备（使用 Arc<Mutex> 保护，供读取和写入共享）
     port: Arc<Mutex<Option<SerialStream>>>,
     /// 关闭标志
@@ -153,7 +153,6 @@ impl SerialSession {
 
         let builder = build_serial_builder(&config)?;
         let port = builder.open_native_async()?;
-        let port_name = config.port_name.clone();
 
         // 发送连接成功事件
         let _ = on_event.send(SerialChannelEvent::Connected);
@@ -171,7 +170,6 @@ impl SerialSession {
 
         Ok(SerialSession {
             session_id,
-            port_name,
             port: port_mutex,
             closed,
             read_handle: Mutex::new(Some(read_handle)),
@@ -198,9 +196,14 @@ impl SerialSession {
                         // 如果无数据则返回 WouldBlock，此时返回 None 让外层 sleep
                         match port_ref.read(&mut buffer) {
                             Ok(n) if n > 0 => Some(Ok((n, buffer))),
-                            Ok(_) => None, // n == 0
-                            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => None,
-                            Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => None,
+                            Ok(_) => None,
+                            Err(ref e)
+                                if matches!(
+                                    e.kind(),
+                                    std::io::ErrorKind::WouldBlock
+                                        | std::io::ErrorKind::TimedOut
+                                        | std::io::ErrorKind::Interrupted
+                                ) => None,
                             Err(e) => Some(Err(e)),
                         }
                     }
