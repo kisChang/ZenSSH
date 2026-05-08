@@ -51,8 +51,7 @@ tokio-util = "0.7"
 once_cell = "1.21"
 serialport = "4.7"
 bytes = "1"
-mio-serial = "5"
-mio = "1"
+tokio-serial = "5.4"
 
 [dev-dependencies]
 #tauri-plugin-devtools = "2"

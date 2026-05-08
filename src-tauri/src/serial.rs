@@ -2,11 +2,12 @@ use anyhow::{bail, Result};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::Duration;
+use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
@@ -84,12 +85,7 @@ struct SerialClosePayload {
     session_id: String,
 }
 
-use mio_serial::{
-    DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits,
-};
-
-/// 将前端配置转换为 mio-serial 的 builder
-fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortBuilder> {
+fn build_serial_builder(config: &SerialConfig) -> Result<tokio_serial::SerialPortBuilder> {
     let data_bits = match config.data_bits {
         5 => DataBits::Five,
         6 => DataBits::Six,
@@ -118,7 +114,7 @@ fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortB
         _ => bail!("Invalid flow_control: {}", config.flow_control),
     };
 
-    Ok(mio_serial::new(&config.port_name, config.baud_rate)
+    Ok(tokio_serial::new(&config.port_name, config.baud_rate)
         .timeout(Duration::from_millis(config.timeout))
         .data_bits(data_bits)
         .parity(parity)
@@ -130,8 +126,10 @@ fn build_serial_builder(config: &SerialConfig) -> Result<mio_serial::SerialPortB
 pub struct SerialSession {
     /// 会话 ID
     pub session_id: String,
-    /// 串口设备（使用 Arc<Mutex> 保护，供读取和写入共享）
-    port: Arc<Mutex<Option<SerialStream>>>,
+    /// 串口读取端
+    read: Arc<Mutex<Option<tokio::io::ReadHalf<SerialStream>>>>,
+    /// 串口写入端
+    write: Arc<Mutex<Option<tokio::io::WriteHalf<SerialStream>>>>,
     /// 关闭标志
     closed: AtomicBool,
     /// 后台读取任务句柄
@@ -153,24 +151,30 @@ impl SerialSession {
 
         let builder = build_serial_builder(&config)?;
         let port = builder.open_native_async()?;
+        #[cfg(unix)]
+        port.set_exclusive(false)
+            .expect("Unable to set serial port exclusive to false");
 
         // 发送连接成功事件
         let _ = on_event.send(SerialChannelEvent::Connected);
 
-        let port_mutex = Arc::new(Mutex::new(Some(port)));
+        let (read, write) = tokio::io::split(port);
+        let read_mutex = Arc::new(Mutex::new(Some(read)));
+        let write_mutex = Arc::new(Mutex::new(Some(write)));
         let closed = AtomicBool::new(false);
 
-        // 启动后台异步读取任务
+        // 启动后台异步读取循环
         let read_handle = Self::spawn_read_loop(
             app,
-            port_mutex.clone(),
+            read_mutex.clone(),
             session_id.clone(),
             on_event,
         );
 
         Ok(SerialSession {
             session_id,
-            port: port_mutex,
+            read: read_mutex,
+            write: write_mutex,
             closed,
             read_handle: Mutex::new(Some(read_handle)),
         })
@@ -179,54 +183,41 @@ impl SerialSession {
     /// 启动后台异步读取循环
     fn spawn_read_loop(
         app: AppHandle,
-        port: Arc<Mutex<Option<SerialStream>>>,
+        read: Arc<Mutex<Option<tokio::io::ReadHalf<SerialStream>>>>,
         session_id: String,
         on_event: tauri::ipc::Channel<SerialChannelEvent>,
     ) -> tokio::task::JoinHandle<()> {
         tokio::spawn(async move {
+            let mut buffer = [0u8; 4096];
+
             loop {
-                // 通过 spawn_blocking 在非阻塞端口上执行读取，避免 busy-loop
-                let result = tokio::task::spawn_blocking({
-                    let port = port.clone();
-                    move || {
-                        let mut buffer = vec![0u8; 4096];
-                        let mut port_guard = port.try_lock().ok()?;
-                        let port_ref = port_guard.as_mut()?;
-                        // SerialStream 是 O_NONBLOCK 的，read 会立即返回
-                        // 如果无数据则返回 WouldBlock，此时返回 None 让外层 sleep
-                        match port_ref.read(&mut buffer) {
-                            Ok(n) if n > 0 => Some(Ok((n, buffer))),
-                            Ok(_) => None,
-                            Err(ref e)
-                                if matches!(
-                                    e.kind(),
-                                    std::io::ErrorKind::WouldBlock
-                                        | std::io::ErrorKind::TimedOut
-                                        | std::io::ErrorKind::Interrupted
-                                ) => None,
-                            Err(e) => Some(Err(e)),
+                let read_result = {
+                    let mut port_guard = read.lock().await;
+                    match port_guard.as_mut() {
+                        Some(serial_port) => serial_port.read(&mut buffer).await,
+                        None => {
+                            break;
                         }
                     }
-                })
-                .await
-                .unwrap_or(None);
+                };
 
-                match result {
-                    Some(Ok((n, data))) => {
+                match read_result {
+                    Ok(0) => {
+                        // EOF — 串口断开
+                        info!("Serial EOF detected: {}", session_id);
+                        break;
+                    }
+                    Ok(n) => {
                         let _ = on_event.send(SerialChannelEvent::Data {
-                            data: data[..n].to_vec(),
+                            data: buffer[..n].to_vec(),
                         });
                     }
-                    Some(Err(e)) => {
+                    Err(e) => {
                         warn!("Serial read error on {}: {}", session_id, e);
                         let _ = on_event.send(SerialChannelEvent::Error {
                             message: e.to_string(),
                         });
                         break;
-                    }
-                    None => {
-                        // No data or WouldBlock — sleep briefly before retrying
-                        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
                     }
                 }
             }
@@ -245,22 +236,11 @@ impl SerialSession {
 
     /// 向串口写入数据
     pub async fn write(&self, data: &[u8]) -> Result<usize> {
-        let mut port_guard = self.port.lock().await;
+        let mut port_guard = self.write.lock().await;
         match port_guard.as_mut() {
             Some(port) => {
-                let mut written = 0;
-                while written < data.len() {
-                    let n = port.write(&data[written..])?;
-                    if n == 0 {
-                        break;
-                    }
-                    written += n;
-                }
-                info!(
-                    "Serial write: {} bytes to {}",
-                    written, self.session_id
-                );
-                Ok(written)
+                port.write_all(data).await?;
+                Ok(data.len())
             }
             None => bail!("Serial port not available"),
         }
@@ -273,10 +253,16 @@ impl SerialSession {
         // 设置关闭标志
         self.closed.store(true, Ordering::Relaxed);
 
-        // 释放端口（读取任务检测到 None 后会退出）
+        // 释放读取端（读取任务会看到 None 并退出）
         {
-            let mut port_guard = self.port.lock().await;
-            *port_guard = None;
+            let mut read_guard = self.read.lock().await;
+            *read_guard = None;
+        }
+
+        // 释放写入端
+        {
+            let mut write_guard = self.write.lock().await;
+            *write_guard = None;
         }
 
         // 等待读取任务结束
