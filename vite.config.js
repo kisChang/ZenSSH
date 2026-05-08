@@ -7,6 +7,19 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [vue()],
+
+  // issue #9
+  esbuild: {
+    minifyIdentifiers: false,
+  },
+  build: {
+    minify: false,
+  },
+  optimizeDeps: {
+    exclude: ["@xterm/xterm"],
+  },
+  // issue #9 end
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors
