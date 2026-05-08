@@ -150,7 +150,7 @@ impl SerialSession {
         );
 
         let builder = build_serial_builder(&config)?;
-        let port = builder.open_native_async()?;
+        let mut port = builder.open_native_async()?;
         #[cfg(unix)]
         port.set_exclusive(false)
             .expect("Unable to set serial port exclusive to false");
