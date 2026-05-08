@@ -9,7 +9,7 @@
     </el-form-item>
 
     <!-- ========== SSH 字段 ========== -->
-    <template v-if="config.type === 'ssh'">
+    <template v-if="config.type === 'ssh' || !config.type">
     <el-form-item :label="$t('connect.name')" prop="name">
       <el-input v-model="config.name" :placeholder="$t('connect.name_placeholder')" />
     </el-form-item>
