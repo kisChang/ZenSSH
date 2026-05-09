@@ -311,6 +311,23 @@ export const appConfigStore = defineStore('AppConf', {
     }
 });
 
+// 填充默认值
+export function normalizeConfig(config) {
+    if (!config.type) config.type = 'ssh';
+    if (config.type === 'ssh') {
+        if (config.port === undefined) config.port = 22;
+        if (!config.timeout) config.timeout = 30;
+        if (!config.keepaliveInterval) config.keepaliveInterval = 30;
+        if (!config.authType) config.authType = 'password';
+    } else if (config.type === 'serial') {
+        if (!config.baudRate) config.baudRate = 115200;
+        if (!config.dataBits) config.dataBits = 8;
+        if (!config.parity) config.parity = 'None';
+        if (!config.stopBits) config.stopBits = 1;
+        if (!config.flowControl) config.flowControl = 'None';
+    }
+}
+
 export const useMngStore = defineStore('UserConf', {
     persist: true,
     state: () => ({
@@ -325,29 +342,13 @@ export const useMngStore = defineStore('UserConf', {
         addConfig(config, connectNow) {
             config.configId = 'k_' + genId();
             // 确保新字段有默认值
-            this.normalizeConfig(config);
+            normalizeConfig(config);
             this.configList.push(config);
             // 同步配置到后端
             this.syncConfig(this.configList).then()
 
             if (connectNow) {
                 useTabsStore().connectConfig(config, 'connect')
-            }
-        },
-        normalizeConfig(config) {
-            // 填充默认值
-            if (!config.type) config.type = 'ssh';
-            if (config.type === 'ssh') {
-                if (config.port === undefined) config.port = 22;
-                if (!config.timeout) config.timeout = 30;
-                if (!config.keepaliveInterval) config.keepaliveInterval = 30;
-                if (!config.authType) config.authType = 'password';
-            } else if (config.type === 'serial') {
-                if (!config.baudRate) config.baudRate = 115200;
-                if (!config.dataBits) config.dataBits = 8;
-                if (!config.parity) config.parity = 'None';
-                if (!config.stopBits) config.stopBits = 1;
-                if (!config.flowControl) config.flowControl = 'None';
             }
         },
         removeConfig(id) {
@@ -359,7 +360,7 @@ export const useMngStore = defineStore('UserConf', {
             appConfigStore().syncToCloud().catch(() => {})
         },
         updateConfig(config) {
-            this.normalizeConfig(config);
+            normalizeConfig(config);
             let find = this.configList.find(item => item.configId === config.configId)
             if (config.passwordNew !== "***************") {
                 config.password = config.passwordNew;
@@ -419,6 +420,7 @@ export const useTabsStore = defineStore('counter', {
     actions: {
         connectConfig(config, type) {
             config = Object.assign({}, config);
+            normalizeConfig(config)
             let title = config.name;
             if (!title) {
                 if (config.type === 'serial') {
