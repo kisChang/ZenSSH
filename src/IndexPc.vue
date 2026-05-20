@@ -15,7 +15,8 @@
                     <el-divider />
                     <el-menu-item index="2-3" @click="appExit">退出</el-menu-item>
                   </el-sub-menu>-->
-        <el-menu-item index="2" @click="toggleSessionManage">{{ $t('main.host') }}</el-menu-item>
+        <el-menu-item index="2" @click="showPanel('host')">{{ $t('main.host') }}</el-menu-item>
+        <el-menu-item index="6" @click="showPanel('credential')">{{ $t('main.credential') }}</el-menu-item>
         <el-menu-item index="3" @click="openSetting">{{ $t('main.setting') }}</el-menu-item>
         <el-menu-item index="4" @click="handleCheckUpdate(true)">{{update ? ("检测到更新：" + update.version) : "检查更新"}}</el-menu-item>
         <el-menu-item index="5" @click="showAbout">{{ $t('main.about') }}</el-menu-item>
@@ -43,7 +44,8 @@
     </el-header>
     <el-splitter>
       <el-splitter-panel :min="200" :size="asideSize">
-        <connect-manage ref="connectManage"/>
+        <connect-manage v-if="panelMode === 'host'" ref="connectManage"/>
+        <credential-manage v-else-if="panelMode === 'credential'" />
       </el-splitter-panel>
       <el-splitter-panel :min="200">
         <div class="terminal-panel" :class="showStatusBar ? 'terminal-panel' : 'terminal-panel no_bar'">
@@ -62,13 +64,14 @@ import {check} from '@tauri-apps/plugin-updater';
 import {openUrl} from '@tauri-apps/plugin-opener'
 import {exit, relaunch} from '@tauri-apps/plugin-process'
 import ConnectManage from "./views/ConnectManage.vue";
+import CredentialManage from "./views/CredentialManage.vue";
 import TerminalTabs from "./views/TerminalTabs.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 
 export default {
   name: "IndexPc",
-  components: {ServerMonitor, TerminalTabs, ConnectManage},
+  components: {ServerMonitor, TerminalTabs, ConnectManage, CredentialManage},
   props: {
     isLoading: false,
   },
@@ -85,6 +88,7 @@ export default {
       update: null,
       activeSessionId: null,
       activeSessionType: null,
+      panelMode: 'host', // 'host' | 'credential'
     }
   },
   mounted() {
@@ -137,10 +141,9 @@ export default {
         this.activeMenu = null
       })
     },
-    toggleSessionManage() {
-      if (this.asideSize > 0) {
-        this.asideSize = 0;
-      } else {
+    showPanel(mode) {
+      this.panelMode = mode;
+      if (this.asideSize === 0) {
         this.asideSize = 200;
       }
     },

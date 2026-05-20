@@ -13,6 +13,7 @@
   },
   "main": {
     "host": "主机",
+    "credential": "凭据",
     "conn": "连接",
     "setting": "配置",
     "about": "关于",
@@ -62,6 +63,9 @@
     "keyPassword_placeholder": "私钥密码（可选）",
     "bastionConfigId": "跳板会话",
     "bastionConfigId_placeholder": "请选择跳板会话（可选）",
+    "credential": "凭据",
+    "credential_placeholder": "选择凭据",
+    "portForward": "端口转发",
     "timeout": "超时(秒)",
     "keepaliveInterval": "保活间隔",
     "name_message": "名称长度限制在3-20字符",
@@ -74,6 +78,22 @@
   },
   "sftp": {
     "main": "文件管理"
+  },
+  "credential": {
+    "title": "凭据管理",
+    "empty": "暂无凭据",
+    "emptyDesc": "创建凭据以安全地管理您的 SSH 认证信息",
+    "add": "添加凭据",
+    "addTitle": "添加凭据",
+    "editTitle": "编辑凭据",
+    "addSuccess": "凭据添加成功",
+    "name": "凭据名称",
+    "namePlaceholder": "输入凭据名称",
+    "nameRequired": "请输入凭据名称",
+    "nameLength": "名称长度限制在1-50字符",
+    "confirmDelete": "确定删除此凭据？",
+    "inUse": "有 {count} 个配置正在使用此凭据，请先解除关联",
+    "usageCount": "{count} usage"
   },
   "setting": {
     "sync_config": "配置云同步：",

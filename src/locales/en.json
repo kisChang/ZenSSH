@@ -13,6 +13,7 @@
   },
   "main": {
     "host": "Host",
+    "credential": "Credential",
     "conn": "Connection",
     "setting": "Settings",
     "about": "About",
@@ -62,8 +63,11 @@
     "keyPassword_placeholder": "Private key passphrase (optional)",
     "bastionConfigId": "Bastion Session",
     "bastionConfigId_placeholder": "Please select a bastion session (optional)",
+    "credential": "Credential",
+    "credential_placeholder": "Select credential",
     "timeout": "Timeout (seconds)",
     "keepaliveInterval": "Keepalive Interval",
+    "portForward": "PortForward",
     "name_message": "Name length must be between 3 and 20 characters",
     "host_message": "Please enter the host address",
     "port_message": "Please enter the SSH port",
@@ -74,6 +78,22 @@
   },
   "sftp": {
     "main": "File Browser"
+  },
+  "credential": {
+    "title": "Credential Management",
+    "empty": "No credentials",
+    "emptyDesc": "Create credentials to securely manage your SSH authentication info",
+    "add": "Add Credential",
+    "addTitle": "Add Credential",
+    "editTitle": "Edit Credential",
+    "addSuccess": "Credential added successfully",
+    "name": "Credential Name",
+    "namePlaceholder": "Enter credential name",
+    "nameRequired": "Please enter credential name",
+    "nameLength": "Name must be between 1-50 characters",
+    "confirmDelete": "Confirm delete this credential?",
+    "inUse": "This credential is used by {count} configs, please remove association first",
+    "usageCount": "Used by {count} configs"
   },
   "setting": {
     "sync_config": "Cloud Sync:",

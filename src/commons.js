@@ -7,7 +7,7 @@ export function notify(options) {
         title: options.title,
         message: options.message,
         type: options.type,
-        zIndex: options.zIndex | 0,
+        zIndex: options.zIndex | 20,
         offset: 30,
         duration: options.duration | 3000,
         showClose: !_isMobile,

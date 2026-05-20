@@ -1,11 +1,6 @@
 import {defineStore} from 'pinia'
 import {invoke} from "@tauri-apps/api/core";
-import {
-    initializeKeyring,
-    getPassword,
-    setPassword,
-    deletePassword
-} from "@/utils/plugin-keyring.js";
+import {deletePassword, getPassword, initializeKeyring, setPassword} from "@/utils/plugin-keyring.js";
 import {CONSTANT, genId} from "@/commons.js";
 import client from "@/request.js"
 import {webdavGet, webdavPut} from "@/utils/webdav.js";
@@ -131,6 +126,24 @@ export const appConfigStore = defineStore('AppConf', {
             const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
             this.deletedIds = this.deletedIds.filter(d => d.deletedAt >= cutoff);
         },
+        /**
+         * 记录凭据删除标记
+         */
+        recordCredentialDeletion(credentialId) {
+            const existing = this.credentialDeletedIds.find(d => d.configId === credentialId);
+            if (existing) {
+                existing.deletedAt = Date.now();
+            } else {
+                this.credentialDeletedIds.push({ configId: credentialId, deletedAt: Date.now() });
+            }
+        },
+        /**
+         * 清理凭据删除标记
+         */
+        cleanupCredentialDeletedIds(days = 90) {
+            const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+            this.credentialDeletedIds = this.credentialDeletedIds.filter(d => d.deletedAt >= cutoff);
+        },
         async syncToCloud() {
             //0. 处理需要同步的数据
             let confData = JSON.parse(JSON.stringify(useMngStore().$state));
@@ -140,6 +153,10 @@ export const appConfigStore = defineStore('AppConf', {
             for (let config of confData.configList) {
                 delete config.isCloud
             }
+            // 添加凭据删除标记（用于凭据的多端同步删除）
+            confData.credentialDeletedIds = confData.credentialDeletedIds || [];
+            // 确保版本号存在（用于多端配置升级协调）
+            confData._version = confData._version || 0;
             let content = JSON.stringify(confData)
             const that = this;
             //1. 生成密钥
@@ -276,30 +293,65 @@ export const appConfigStore = defineStore('AppConf', {
             // 合并配置
             const cloudContent = JSON.parse(decrypt);
             const localContent = useMngStore().$state
-            let mergedList = mergeList(cloudContent.configList, localContent.configList, 'configId')
 
-            // 合并删除标记（云端 + 本地）
+            // 处理配置版本号冲突 - 取最大值确保配置升级到最新版本
+            const cloudVersion = cloudContent._version || 0;
+            const localVersion = localContent._version || 0;
+            const mergedVersion = Math.max(cloudVersion, localVersion);
+            console.log(`[Sync] Version conflict resolved: cloud=${cloudVersion}, local=${localVersion}, merged=${mergedVersion}`);
+
+            // 合并主机配置列表
+            let mergedList = mergeList(cloudContent.configList || [], localContent.configList || [], 'configId')
+
+            // 合并凭据列表
+            let mergedCredentialList = mergeList(
+                cloudContent.credentialList || [],
+                localContent.credentialList || [],
+                'credentialId'
+            );
+
+            // 合并删除标记（云端 + 本地）- 主机配置
             const cloudDeletedIds = cloudContent.deletedIds || [];
             const mergedDeletedIds = mergeDeletedIds(cloudDeletedIds, this.deletedIds);
-            // 用删除标记过滤已删除的条目
+            // 用删除标记过滤已删除的主机配置
             const deletedIdSet = new Set(mergedDeletedIds.map(d => d.configId));
             mergedList = mergedList.filter(item => !deletedIdSet.has(item.configId));
 
+            // 合并凭据删除标记
+            const cloudCredDeletedIds = cloudContent.credentialDeletedIds || [];
+            const localCredDeletedIds = localContent.credentialDeletedIds || [];
+            const mergedCredDeletedIds = mergeDeletedIds(cloudCredDeletedIds, localCredDeletedIds);
+            // 用删除标记过滤已删除的凭据
+            const deletedCredIdSet = new Set(mergedCredDeletedIds.map(d => d.configId));
+            mergedCredentialList = mergedCredentialList.filter(item => !deletedCredIdSet.has(item.credentialId));
+
             // 标记本地/云端
-            const localIds = new Set(cloudContent.configList.map(item => item.configId));
+            const localIds = new Set((cloudContent.configList || []).map(item => item.configId));
             mergedList = mergedList.map(item => ({
                 ...item,
                 isCloud: localIds.has(item.configId)
             }));
+
+            // 更新 store 状态
             useMngStore().$state = {
                 ...cloudContent,
                 ...localContent,
-                configList: mergedList
+                configList: mergedList,
+                credentialList: mergedCredentialList,
+                credentialDeletedIds: mergedCredDeletedIds,
+                _version: mergedVersion,
             };
 
             // 更新本地删除标记并清理过期记录
             this.deletedIds = mergedDeletedIds;
             this.cleanupDeletedIds();
+            // 清理过期凭据删除标记
+            const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+            useMngStore().credentialDeletedIds = mergedCredDeletedIds.filter(d => d.deletedAt >= cutoff);
+
+            // 同步完成后，检查并执行配置升级
+            // 如果云端版本更高，或合并后需要升级，在此触发
+            useMngStore().migrateOldConfigs();
 
             if (this.syncType === 3) {
                 this.webdavLastSync = new Date().toLocaleString()
@@ -310,6 +362,21 @@ export const appConfigStore = defineStore('AppConf', {
         },
     }
 });
+
+// 配置版本号，用于配置升级管理
+export const CONFIG_VERSION = 1;
+
+// 凭据默认值
+export const DEFAULT_CREDENTIAL = {
+    credentialId: '',
+    name: '',
+    username: '',
+    authType: 'password',
+    password: '',
+    privateKeyPath: '',
+    privateKeyData: '',
+    keyPassword: '',
+};
 
 // 填充默认值
 export function normalizeConfig(config) {
@@ -328,21 +395,155 @@ export function normalizeConfig(config) {
     }
 }
 
+// 从配置中提取凭据信息（用于升级旧配置）
+export function extractCredentialFromConfig(config) {
+    return {
+        ...DEFAULT_CREDENTIAL,
+        credentialId: 'c_' + genId(),
+        name: config.username + '@' + config.host,
+        username: config.username || '',
+        authType: config.authType || 'password',
+        password: config.password || '',
+        privateKeyPath: config.privateKeyPath || '',
+        privateKeyData: config.privateKeyData || '',
+        keyPassword: config.keyPassword || '',
+    };
+}
+
 export const useMngStore = defineStore('UserConf', {
     persist: true,
     state: () => ({
         configList: [],
+        credentialList: [],
+        // 配置版本号，用于管理配置升级
+        _version: 0,
     }),
     getters: {
         getById(state, id) {
             return state.configList.find(item => item.configId === id);
+        },
+        getCredentialById(state) {
+            return (id) => state.credentialList.find(item => item.credentialId === id);
+        },
+        // 获取凭据选项列表（用于选择框）
+        credentialOptions(state) {
+            return state.credentialList.map(item => ({
+                value: item.credentialId,
+                label: item.name,
+                credential: item
+            }));
         }
     },
     actions: {
+        // 根据当前版本号逐步执行升级操作
+        migrateOldConfigs() {
+            const currentVersion = this._version || 0;
+            // 版本 0 -> 1：引入凭据系统
+            if (currentVersion < 1) {
+                this.migrateV0ToV1();
+            }
+            // 更新到最新版本
+            if (this._version !== CONFIG_VERSION) {
+                this._version = CONFIG_VERSION;
+                console.log(`[Migrate] Config upgraded to version ${CONFIG_VERSION}`);
+            }
+        },
+
+        // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据
+        migrateV0ToV1() {
+            console.log('[Migrate] Upgrading config from v0 to v1 (credential system)');
+
+            let migratedCount = 0;
+            this.configList.forEach(config => {
+                // 只处理 SSH 类型且有认证信息的配置
+                normalizeConfig(config);
+                if (config.type === 'ssh') {
+                    // 检查是否已有匹配的凭据
+                    const existingCred = this.credentialList.find(c =>
+                        c.name === config.username + '@' + config.host
+                    );
+
+                    if (!existingCred) {
+                        // 提取凭据
+                        const credential = extractCredentialFromConfig(config);
+                        this.credentialList.push(credential);
+                        // 在配置中保存凭据引用
+                        config.credentialId = credential.credentialId;
+                        migratedCount++;
+                    } else {
+                        // 使用已有的凭据
+                        config.credentialId = existingCred.credentialId;
+                    }
+                }
+            });
+
+            if (migratedCount > 0) {
+                console.log(`[Migrate] Migrated ${migratedCount} configs to new credential system`);
+            }
+        },
+
+        // 添加凭据
+        addCredential(credential) {
+            credential.credentialId = 'c_' + genId();
+            if (!credential.name) {
+                credential.name = '凭据_' + credential.credentialId.slice(-6);
+            }
+            this.credentialList.push(credential);
+            this.syncConfig().then();
+            return credential.credentialId;
+        },
+
+        // 更新凭据
+        updateCredential(credential) {
+            let find = this.credentialList.find(item => item.credentialId === credential.credentialId);
+            if (find) {
+                // 处理密码更新
+                if (credential.passwordNew && credential.passwordNew !== "**************") {
+                    credential.password = credential.passwordNew;
+                }
+                delete credential.passwordNew;
+                Object.assign(find, credential);
+                this.syncConfig().then();
+            }
+        },
+
+        // 删除凭据
+        removeCredential(credentialId) {
+            // 检查是否有配置正在使用此凭据
+            const usingConfigs = this.configList.filter(c => c.credentialId === credentialId);
+            if (usingConfigs.length > 0) {
+                throw new Error(`有 ${usingConfigs.length} 个配置正在使用此凭据，请先解除关联`);
+            }
+
+            this.credentialList = this.credentialList.filter(item => item.credentialId !== credentialId);
+            this.syncConfig().then();
+        },
+
+        // 获取配置使用的凭据（如果没有指定凭据ID，尝试查找匹配的旧凭据）
+        getConfigCredential(config) {
+            if (config.credentialId) {
+                return this.getCredentialById(config.credentialId);
+            }
+            // 兼容旧配置：按用户名+主机名查找匹配的凭据
+            return this.credentialList.find(c =>
+                c.name === config.username + '@' + config.host
+            );
+        },
+
         addConfig(config, connectNow) {
             config.configId = 'k_' + genId();
             // 确保新字段有默认值
             normalizeConfig(config);
+
+            // 如果有凭据ID，关联凭据
+            if (config.credentialId) {
+                const cred = this.getCredentialById(config.credentialId);
+                if (cred) {
+                    // 同步认证信息到配置（用于后端连接）
+                    this.syncAuthInfoToConfig(config, cred);
+                }
+            }
+
             this.configList.push(config);
             // 同步配置到后端
             this.syncConfig(this.configList).then()
@@ -362,7 +563,15 @@ export const useMngStore = defineStore('UserConf', {
         updateConfig(config) {
             normalizeConfig(config);
             let find = this.configList.find(item => item.configId === config.configId)
-            if (config.passwordNew !== "***************") {
+
+            // 如果有凭据ID，同步认证信息
+            if (config.credentialId) {
+                const cred = this.getCredentialById(config.credentialId);
+                if (cred) {
+                    this.syncAuthInfoToConfig(config, cred);
+                }
+            } else if (config.passwordNew !== "***************") {
+                // 直接更新密码（旧模式兼容）
                 config.password = config.passwordNew;
             }
             delete config.passwordNew;
@@ -370,10 +579,36 @@ export const useMngStore = defineStore('UserConf', {
             this.syncConfig(this.configList).then()
         },
 
+        // 将凭据的认证信息同步到配置（用于后端连接）
+        syncAuthInfoToConfig(config, credential) {
+            if (!credential) return;
+            config.authType = credential.authType;
+            // 同步用户名（如果凭据中有）
+            if (credential.username) {
+                config.username = credential.username;
+            }
+            if (credential.authType === 'password') {
+                config.password = credential.password;
+                // 清空密钥相关字段
+                config.privateKeyPath = '';
+                config.privateKeyData = '';
+                config.keyPassword = '';
+            } else if (credential.authType === 'key') {
+                config.privateKeyPath = credential.privateKeyPath;
+                config.privateKeyData = credential.privateKeyData;
+                config.keyPassword = credential.keyPassword;
+                // 清空密码字段
+                config.password = '';
+            }
+        },
+
         /**
          * 同步配置到后端的 CONFIG_MAP
          */
         async syncConfig() {
+            // 确保迁移完成
+            this.migrateOldConfigs();
+
             let backendConfig = {};
             this.configList.forEach(item => {
                 backendConfig[item.configId] = item;

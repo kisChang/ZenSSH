@@ -17,6 +17,9 @@
         <div :key="activeTab" class="tab-content">
           <mobile-host v-if="activeTab === 'host'" ref="hostMng"/>
 
+          <!-- 移动端凭据管理 -->
+          <mobile-credential v-else-if="activeTab === 'credential'" />
+
           <!-- 移动端连接列表 -->
           <div v-else-if="activeTab === 'conn'" class="conn-list-view">
             <el-empty v-if="tabsStore.connList <= 0"
@@ -93,6 +96,10 @@
         <el-icon :size="20"><Platform /></el-icon>
         <span>{{ $t('main.host') }}</span>
       </div>
+      <div class="tab" @click="toggleTab('credential')" :class="{active : activeTab === 'credential'}">
+        <el-icon :size="20"><Key /></el-icon>
+        <span>{{ $t('main.credential') }}</span>
+      </div>
       <div class="tab" @click="toggleTab('conn')" :class="{active : activeTab === 'conn'}">
         <el-icon :size="20"><Connection /></el-icon>
         <span>{{ $t('main.conn') }}</span>
@@ -113,13 +120,14 @@ import {
 import ConnectManage from "@/views/ConnectManage.vue";
 import TerminalTabs from "@/views/TerminalTabs.vue";
 import MobileHost from "@/mobile/MobileHost.vue";
+import MobileCredential from "@/mobile/MobileCredential.vue";
 import MobileSetting from "@/mobile/MobileSetting.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 import {onBackButtonPress} from "@tauri-apps/api/app";
 import {isMobile} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
-import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu} from "@element-plus/icons-vue";
+import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
 
 export default {
@@ -127,7 +135,7 @@ export default {
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, MobileSetting, MobileHost, TerminalTabs, ConnectManage, ServerMonitor},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key, MobileSetting, MobileHost, MobileCredential, TerminalTabs, ConnectManage, ServerMonitor},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -137,7 +145,7 @@ export default {
       showTerminal: false,
       monitorSession: null,
       transitionName: 'slide-left',
-      tabIndexMap: { 'host': 0, 'conn': 1, 'setting': 2 },
+      tabIndexMap: { 'host': 0, 'credential': 1, 'conn': 2, 'setting': 3 },
     }
   },
   mounted() {
@@ -200,6 +208,9 @@ export default {
           this.toggleTab('host')
           this.showTerminal = false
         }
+      } else if (this.activeTab === 'credential') {
+        // 从凭据管理返回到主机列表
+        this.toggleTab('host')
       } else {
         this.toggleTab('host')
       }
@@ -207,6 +218,7 @@ export default {
     toggleTab: function (to) {
       const titleMap = {
         'host': "main.host",
+        'credential': "main.credential",
         'conn': "main.conn",
         'setting': "main.setting",
       }

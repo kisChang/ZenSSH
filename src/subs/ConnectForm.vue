@@ -19,48 +19,31 @@
     <el-form-item :label="$t('connect.port')" prop="port">
       <el-input-number v-model="config.port" :min="1" :max="65535" :placeholder="$t('connect.port_placeholder')" style="min-width: 15rem;"/>
     </el-form-item>
-    <el-form-item :label="$t('connect.username')" prop="username">
-      <el-input v-model="config.username" :placeholder="$t('connect.username_placeholder')" />
+
+    <!-- 凭据选择 -->
+    <el-form-item :label="$t('connect.credential')">
+      <el-select
+        v-model="config.credentialId"
+        :placeholder="$t('connect.credential_placeholder')"
+        clearable
+        style="width: 100%"
+        @change="handleCredentialChange"
+      >
+        <el-option
+          v-for="cred in credentialOptions"
+          :key="cred.value"
+          :value="cred.value"
+          :label="cred.label"
+        />
+      </el-select>
     </el-form-item>
 
-    <!-- 认证方式 -->
-    <el-form-item :label="$t('connect.authType')">
-      <el-radio-group v-model="config.authType" @change="handleAuthTypeChange">
-        <el-radio value="password">{{ $t('connect.authType_pw') }}</el-radio>
-        <el-radio value="key">{{ $t('connect.authType_key') }}</el-radio>
-      </el-radio-group>
-    </el-form-item>
-
-    <!-- 密码认证 -->
-    <template v-if="config.authType === 'password'">
-      <el-form-item v-if="config.configId" :label="$t('connect.password')" prop="passwordNew">
-        <el-input v-model="config.passwordNew" type="password" :placeholder="$t('connect.passwordNew_placeholder')" show-password />
-      </el-form-item>
-      <el-form-item v-else :label="$t('connect.password')" prop="password">
-        <el-input v-model="config.password" type="password" :placeholder="$t('connect.password_placeholder')" show-password />
-      </el-form-item>
-    </template>
-
-    <!-- 私钥认证 -->
-    <template v-if="config.authType === 'key'">
-      <el-form-item :label="$t('connect.privateKeyPath')">
-        <el-input v-model="config.privateKeyPath" :placeholder="$t('connect.privateKeyPath_placeholder')" />
-      </el-form-item>
-      <el-form-item :label="$t('connect.privateKeyData')">
-        <el-input
-            v-model="config.privateKeyData"
-            type="textarea"
-            :rows="3"
-            :placeholder="$t('connect.privateKeyData_placeholder')"
-        />
-      </el-form-item>
-      <el-form-item :label="$t('connect.keyPassword')">
-        <el-input
-            v-model="config.keyPassword"
-            type="password"
-            :placeholder="$t('connect.keyPassword_placeholder')"
-            show-password
-        />
+    <!-- 显示已选凭据的信息 -->
+    <template v-if="config.credentialId && selectedCredential">
+      <el-form-item :label="$t('connect.authType')">
+        <el-tag :type="selectedCredential.authType === 'password' ? 'primary' : 'success'">
+          {{ selectedCredential.authType === 'password' ? $t('connect.authType_pw') : $t('connect.authType_key') }}
+        </el-tag>
       </el-form-item>
     </template>
 
@@ -91,7 +74,7 @@
     <el-form-item label-width="40px" class="forward-content">
       <template v-slot:label>
         <div>
-          <div>端口</div>
+          <div>{{ $t('connect.portForward') }}</div>
           <el-button size="small" type="primary" circle @click="addPortForward">
             <el-icon :size="15"><Plus /></el-icon>
           </el-button>
@@ -120,7 +103,7 @@
         </el-row>
       </div>
       <div v-else style="margin: auto;">
-        <el-empty :image-size="50" description="No Port Forward Config." />
+        No Port Forward Config.
       </div>
     </el-form-item>
     </template>
@@ -238,7 +221,9 @@ export default {
     },
   },
   data() {
+    const mngStore = useMngStore();
     return {
+      mngStore,
       bastionSessions: [],
       serialPorts: [],
 
@@ -249,9 +234,7 @@ export default {
         ],
         host: [ { required: true, message: this.$t('connect.host_message'),trigger: 'blur' } ],
         port: [ { required: true, message: this.$t('connect.port_message'),trigger: 'blur' } ],
-        username: [ { required: true, message: this.$t('connect.username_message'),trigger: 'blur' } ],
-        password: [ { required: true, message: this.$t('connect.password_message'),trigger: 'blur' } ],
-        passwordNew: [ { required: true, message: this.$t('connect.password_message'),trigger: 'blur' } ],
+        credentialId: [ { required: true, message: this.$t('connect.credential_placeholder'),trigger: 'blur' } ],
         portName: [ { required: true, message: this.$t('connect.portName_message'),trigger: 'blur' } ],
       }
     }
@@ -271,10 +254,19 @@ export default {
       set(val) {
         this.$emit('update:modelValue', val);
       }
+    },
+    credentialOptions() {
+      return this.mngStore.credentialOptions;
+    },
+    selectedCredential() {
+      if (!this.config.credentialId) return null;
+      return this.mngStore.getCredentialById(this.config.credentialId);
     }
   },
   mounted() {
     this.bastionSessions = useMngStore().configList
+    // 确保旧配置升级
+    this.mngStore.migrateOldConfigs();
   },
   methods: {
     addPortForward() {
@@ -301,6 +293,27 @@ export default {
         this.config.keyPassword = '';
       } else {
         this.config.password = '';
+      }
+    },
+    handleCredentialChange(credentialId) {
+      if (credentialId) {
+        const cred = this.mngStore.getCredentialById(credentialId);
+        if (cred) {
+          // 根据凭据类型清空对应的旧字段
+          if (cred.authType === 'password') {
+            this.config.privateKeyPath = '';
+            this.config.privateKeyData = '';
+            this.config.keyPassword = '';
+          } else {
+            this.config.password = '';
+          }
+          // 同步凭据的认证类型到配置
+          this.config.authType = cred.authType;
+          // 如果凭据有用户名且配置的用户名为空，自动填充
+          if (cred.username && !this.config.username) {
+            this.config.username = cred.username;
+          }
+        }
       }
     },
     handleTypeChange(val) {
