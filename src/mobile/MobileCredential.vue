@@ -41,73 +41,11 @@
     <!-- 凭据表单 -->
     <div v-else class="credential-form">
       <el-scrollbar height="80vh">
-        <el-form
-          ref="formRef"
-          :model="formData"
-          :rules="formRules"
-          label-width="100px"
-          label-suffix=":"
+        <CredentialForm
+          ref="credentialFormRef"
+          v-model="formData"
           class="mobile-form"
-        >
-          <el-form-item :label="$t('credential.name')" prop="name">
-            <el-input
-              v-model="formData.name"
-              :placeholder="$t('credential.namePlaceholder')"
-            />
-          </el-form-item>
-
-          <el-form-item :label="$t('connect.username')" prop="username">
-            <el-input
-              v-model="formData.username"
-              :placeholder="$t('connect.username_placeholder')"
-            />
-          </el-form-item>
-
-          <el-form-item :label="$t('connect.authType')" prop="authType">
-            <el-radio-group v-model="formData.authType">
-              <el-radio value="password">{{ $t('connect.authType_pw') }}</el-radio>
-              <el-radio value="key">{{ $t('connect.authType_key') }}</el-radio>
-            </el-radio-group>
-          </el-form-item>
-
-          <!-- 密码认证 -->
-          <template v-if="formData.authType === 'password'">
-            <el-form-item :label="$t('connect.password')" prop="password">
-              <el-input
-                v-model="formData.password"
-                type="password"
-                show-password
-                :placeholder="$t('connect.password_placeholder')"
-              />
-            </el-form-item>
-          </template>
-
-          <!-- 密钥认证 -->
-          <template v-if="formData.authType === 'key'">
-            <el-form-item :label="$t('connect.privateKeyPath')">
-              <el-input
-                v-model="formData.privateKeyPath"
-                :placeholder="$t('connect.privateKeyPath_placeholder')"
-              />
-            </el-form-item>
-            <el-form-item :label="$t('connect.privateKeyData')">
-              <el-input
-                v-model="formData.privateKeyData"
-                type="textarea"
-                :rows="3"
-                :placeholder="$t('connect.privateKeyData_placeholder')"
-              />
-            </el-form-item>
-            <el-form-item :label="$t('connect.keyPassword')">
-              <el-input
-                v-model="formData.keyPassword"
-                type="password"
-                show-password
-                :placeholder="$t('connect.keyPassword_placeholder')"
-              />
-            </el-form-item>
-          </template>
-        </el-form>
+        />
 
         <div class="form-actions">
           <button class="btn btn-secondary" style="width: 30%; margin-right: 10px;" @click="handleCancel">
@@ -116,7 +54,7 @@
           <button v-if="isEdit" class="btn btn-danger" style="width: 30%; margin-right: 10px;" @click="handleDelete">
             {{ $t('common.delete') }}
           </button>
-          <button class="btn" style="width: isEdit ? '30%' : '60%'" @click="handleSubmit">
+          <button class="btn" :style="{ width: isEdit ? '30%' : '60%' }" @click="handleSubmit">
             {{ $t('common.submit') }}
           </button>
         </div>
@@ -128,28 +66,21 @@
 <script>
 import { useMngStore, DEFAULT_CREDENTIAL, appConfigStore } from "@/store.js";
 import { DArrowLeft, ArrowRight } from "@element-plus/icons-vue";
+import CredentialForm from "@/subs/CredentialForm.vue";
 
 export default {
   name: "MobileCredential",
-  components: { DArrowLeft, ArrowRight },
+  components: { DArrowLeft, ArrowRight, CredentialForm },
   data() {
     const mngStore = useMngStore();
     return {
       mngStore,
       showForm: false,
       isEdit: false,
+      credentialFormRef: null,
       formData: {
         ...DEFAULT_CREDENTIAL,
         passwordNew: '',
-      },
-      formRules: {
-        name: [
-          { required: true, message: this.$t('credential.nameRequired'), trigger: 'blur' },
-          { min: 1, max: 50, message: this.$t('credential.nameLength'), trigger: 'blur' },
-        ],
-        password: [
-          { required: true, message: this.$t('connect.password_message'), trigger: 'blur' },
-        ],
       },
     };
   },
@@ -207,19 +138,18 @@ export default {
         })
         .catch(() => {});
     },
-    handleSubmit() {
-      this.$refs.formRef.validate((valid) => {
-        if (!valid) return;
+    async handleSubmit() {
+      const valid = await this.$refs.credentialFormRef.validate();
+      if (!valid) return;
 
-        if (this.isEdit) {
-          this.mngStore.updateCredential(this.formData);
-          this.$message.success(this.$t('common.success'));
-        } else {
-          this.mngStore.addCredential(this.formData);
-          this.$message.success(this.$t('credential.addSuccess'));
-        }
-        this.showForm = false;
-      });
+      if (this.isEdit) {
+        this.mngStore.updateCredential(this.formData);
+        this.$message.success(this.$t('common.success'));
+      } else {
+        this.mngStore.addCredential(this.formData);
+        this.$message.success(this.$t('credential.addSuccess'));
+      }
+      this.showForm = false;
     },
   },
 };
