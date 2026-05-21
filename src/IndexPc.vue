@@ -87,7 +87,7 @@ export default {
       showUpdater: false,
       update: null,
       activeSessionId: null,
-      activeSessionType: null,
+      activeSessionType: 'welcome',
       panelMode: 'host', // 'host' | 'credential'
     }
   },
@@ -199,7 +199,6 @@ export default {
     height: calc(100vh - 90px);
   }
   &.no_bar {
-    height: calc(100vh);
     :deep(.terminal-container) {
       height: calc(100vh - 60px);
     }
