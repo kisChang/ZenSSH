@@ -1,5 +1,5 @@
 <template>
-  <div class="menu">
+  <el-scrollbar class="menu" wrap-class="menu-scroll">
     <draggable
         v-if="configList.length > 0"
         v-model="configListModel"
@@ -69,7 +69,7 @@
         </el-dropdown-menu>
       </template>
     </el-dropdown>
-  </div>
+  </el-scrollbar>
 </template>
 
 <script>
@@ -240,7 +240,9 @@ export default {
   }
 }
 .menu {
-  padding-top: 8px;
+}
+:deep(.menu-scroll) {
+  overflow-x: hidden;
 }
 
 :deep(.el-button--primary) {
