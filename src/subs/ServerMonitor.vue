@@ -86,41 +86,44 @@ export default {
 <style scoped lang="scss">
 .server-monitor {
   font-size: 12px;
-  color: #e2e8f0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .stats-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-family: monospace;
+  gap: 5px;
+  font-family: 'Consolas', 'Monaco', monospace;
   font-size: 11px;
   white-space: nowrap;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 
   .el-icon {
-    color: #67C23A;
+    color: #409EFF;
     flex-shrink: 0;
   }
 
   &.net-item {
     .net-rx {
       color: #22c55e;
-      margin-left: 4px;
+      margin-left: 6px;
       display: inline-flex;
       align-items: center;
       gap: 2px;
     }
 
     .net-tx {
-      color: #3b82f6;
-      margin-left: 4px;
+      color: #f59e0b;
+      margin-left: 6px;
       display: inline-flex;
       align-items: center;
       gap: 2px;
@@ -131,12 +134,13 @@ export default {
 .monitor-empty {
   display: flex;
   gap: 8px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.4);
   font-size: 12px;
 
   .is-loading {
-    margin-top: 5px;
+    margin-top: 3px;
     animation: rotating 2s linear infinite;
+    color: #409EFF;
   }
 }
 

@@ -186,11 +186,27 @@ export default {
 }
 
 .config-item {
-  padding: 3px 10px 0;
-  border-bottom: 1px solid #DDD;
+  padding: 12px 14px;
+  margin: 6px 8px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #2a2a3e 0%, #1e1e2d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: grab;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition: all 0.25s ease;
+  &:hover {
+    background: linear-gradient(145deg, #363654 0%, #2a2a44 100%);
+    border-color: rgba(64, 158, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+    transform: translateY(-1px);
+    .title {
+      color: #409EFF;
+    }
+    .subtitle {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
   &.ghost {
     opacity: 0.5;
     background-color: #444;
@@ -198,30 +214,47 @@ export default {
   &.drag {
     opacity: 0.9;
     background-color: #555;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
   &.chosen {
     opacity: 0.8;
     background-color: #4a4a4a;
   }
   .title {
-    font-size: 1.1rem;
-    line-height: 1.5rem;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.5;
+    margin-bottom: 4px;
+    transition: color 0.2s ease;
   }
   .subtitle {
-    font-size: 0.8rem;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.2s ease;
     :deep(.el-icon svg) {
-      width: 10px;
-      height: 10px;
-    }
-  }
-  &:hover {
-    .title, .subtitle {
-      color: var(--el-color-primary);
+      width: 12px;
+      height: 12px;
+      vertical-align: -2px;
     }
   }
 }
 .menu {
-  background: #333;
+  background: linear-gradient(180deg, #16161e 0%, #1a1a28 100%);
   height: 100%;
+  padding-top: 8px;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #409EFF 0%, #3375e9 100%);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  &:hover {
+    background: linear-gradient(135deg, #5ca4ff 0%, #4d8aee 100%);
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+    transform: translateY(-1px);
+  }
 }
 </style>

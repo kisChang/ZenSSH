@@ -192,33 +192,113 @@ export default {
 
 <style scoped lang="scss">
 .terminal-tabs-welcome {
-  height: calc(100vh - 100px);
+  height: calc(100vh - 110px);
+  background: #1a1a2e;
+  :deep(.el-empty) {
+    padding-top: 80px;
+    .el-empty__image {
+      width: 180px;
+      opacity: 0.9;
+    }
+    .el-empty__description {
+      margin-top: 20px;
+      p {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 15px;
+        line-height: 1.6;
+      }
+    }
+  }
+  :deep(.el-button--primary) {
+    background: linear-gradient(135deg, #409EFF 0%, #3375e9 100%);
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    &:hover {
+      background: linear-gradient(135deg, #5ca4ff 0%, #4d8aee 100%);
+      box-shadow: 0 6px 20px rgba(64, 158, 255, 0.45);
+      transform: translateY(-2px);
+    }
+  }
 }
 .terminal-tabs {
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 30px);
-  background: #222;
-  :deep(.el-tabs__item.is-active) {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
+  background: linear-gradient(180deg, #0d0d14 0%, #14141f 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+  :deep(.el-tabs__header) {
+    background: linear-gradient(90deg, #1a1a28 0%, #16161f 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin: 0;
+    padding: 0 8px;
   }
-  .tab-icon {
-    width: 25px;
-    height: 25px;
-    padding: 0;
-    margin-left: 10px;
-    border-radius: 50%;
+
+  :deep(.el-tabs__nav-wrap::after) {
+    display: none;
+  }
+
+  :deep(.el-tabs__item) {
+    padding: 0 16px;
+    height: 38px;
+    line-height: 38px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+    background: transparent;
+    transition: all 0.2s ease;
+    border-radius: 6px 6px 0 0;
+    margin: 4px 2px 0;
+
     &:hover {
-      background: var(--el-color-primary);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  :deep(.el-tabs__item.is-active) {
+    color: #fff;
+    background: linear-gradient(180deg, #252535 0%, #1e1e2a 100%);
+    font-weight: 500;
+    box-shadow: 0 -2px 8px rgba(64, 158, 255, 0.15);
+  }
+
+  :deep(.el-tabs__active-bar) {
+    display: none;
+  }
+
+  :deep(.el-tabs__content) {
+    height: calc(100% - 46px);
+    overflow: hidden;
+  }
+
+  .tab-icon {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    margin-left: 8px;
+    border-radius: 50%;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    &:hover {
+      background: rgba(239, 68, 68, 0.9);
       color: #FFF;
+      opacity: 1;
     }
   }
 
   .setting-tab {
     padding: 20px;
+    height: 100%;
+    overflow: auto;
   }
 }
 @media (max-width: 768px) {
   .terminal-tabs {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .terminal-tabs-welcome {
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }

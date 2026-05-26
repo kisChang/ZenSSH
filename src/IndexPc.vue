@@ -173,21 +173,42 @@ export default {
 
 <style lang="scss" scoped>
 .header {
-  height: 30px;
+  height: 40px;
   padding: 0;
-  background: #525252;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .aside-hidden {
   width: 0 !important;
 }
 :deep(.el-splitter) {
-  height: calc(100vh - 30px);
+  height: calc(100vh - 40px);
+  background: #0d0d14;
+}
+:deep(.el-splitter__bar) {
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease;
+  &:hover {
+    background: rgba(64, 158, 255, 0.4);
+  }
+}
+:deep(.el-splitter__bar::after) {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
 }
 
 .terminal-panel {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 30px);
+  height: calc(100vh - 40px);
   :deep(.terminal-tabs),
   :deep(.terminal-tabs-welcome) {
     flex: 1 1 0;
@@ -196,11 +217,11 @@ export default {
     overflow: hidden;
   }
   :deep(.terminal-container) {
-    height: calc(100vh - 90px);
+    height: calc(100vh - 100px);
   }
   &.no_bar {
     :deep(.terminal-container) {
-      height: calc(100vh - 60px);
+      height: calc(100vh - 70px);
     }
   }
 }
@@ -208,12 +229,13 @@ export default {
 .status-bar {
   flex-shrink: 0;
   height: 28px;
-  padding: 0 12px;
-  background: #1e293b;
-  border-top: 1px solid #334155;
+  padding: 0 16px;
+  background: linear-gradient(90deg, #12121a 0%, #181824 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   overflow: hidden;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .status-bar-empty {
@@ -223,12 +245,24 @@ export default {
 
 .el-menu--horizontal {
   --el-menu-horizontal-height: 100%;
+  --el-menu-hover-bg-color: rgba(64, 158, 255, 0.15);
+  --el-menu-active-color: #409EFF;
+  background: transparent;
+  border-bottom: none;
   user-select: none;
   .el-menu-item {
-    padding: 0 10px;
-    color: var(--el-menu-text-color) !important;
+    padding: 0 14px;
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    margin: 4px 4px 0;
     &:hover {
-      color: var(--el-menu-active-color) !important;
+      color: #fff !important;
+      background: rgba(64, 158, 255, 0.2) !important;
+    }
+    &:focus {
+      background: transparent;
     }
   }
   .el-divider--horizontal {
