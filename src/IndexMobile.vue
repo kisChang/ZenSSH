@@ -313,6 +313,12 @@ $text-sub: #94a3b8;
   align-items: center;
   padding: 0 16px;
   font-size: 16px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  z-index: 10;
 
   .left,
   .right {
@@ -327,6 +333,10 @@ $text-sub: #94a3b8;
     text-align: center;
     font-weight: 600;
     font-size: 18px;
+    background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .right {
@@ -372,40 +382,48 @@ $text-sub: #94a3b8;
     }
     .conn-list-scroll {
       flex: 1;
-      padding: 8px 12px;
+      padding: 12px 16px;
     }
     .conn-item {
       display: flex;
       align-items: center;
-      padding: 5px 10px;
-      margin-bottom: 8px;
-      background: $card;
-      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
       &:active {
-        background: #334155;
+        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        transform: scale(0.98);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
     }
     .conn-icon-wrap {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border-radius: 12px;
       flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .conn-info {
       flex: 1;
-      margin-left: 10px;
+      margin-left: 14px;
       min-width: 0;
       .conn-title {
-        font-size: 15px;
-        font-weight: 500;
+        font-size: 16px;
+        font-weight: 600;
         color: $text-main;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        letter-spacing: 0.3px;
       }
       .conn-state {
         font-size: 12px;
@@ -416,36 +434,63 @@ $text-sub: #94a3b8;
     .conn-arrow {
       color: $text-sub;
       flex-shrink: 0;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+
+      &:active {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ef4444;
+      }
     }
     .port-forward-list {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
       .port-forward-item {
         display: flex;
         align-items: center;
         gap: 4px;
+        padding: 4px 8px;
+        background: rgba(64, 158, 255, 0.15);
+        border-radius: 6px;
+        border: 1px solid rgba(64, 158, 255, 0.25);
         .pf-text {
-          font-size: 8px;
+          font-size: 10px;
           color: #409EFF;
           font-family: monospace;
         }
       }
     }
     .sftp-indicator {
-      margin-top: 4px;
-      display: flex;
+      margin-top: 6px;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 3px 8px;
+      background: rgba(34, 197, 94, 0.15);
+      border-radius: 6px;
+      border: 1px solid rgba(34, 197, 94, 0.25);
       .sftp-text {
-        font-size: 8px;
+        font-size: 10px;
+        font-weight: 500;
         color: #67C23A;
       }
     }
     .serial-indicator {
-      margin-top: 4px;
-      display: flex;
+      margin-top: 6px;
+      margin-left: 6px;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
+      padding: 3px 8px;
+      background: rgba(230, 162, 60, 0.15);
+      border-radius: 6px;
+      border: 1px solid rgba(230, 162, 60, 0.25);
       .serial-text {
-        font-size: 8px;
+        font-size: 10px;
+        font-weight: 500;
         color: #E6A23C;
       }
     }
@@ -485,11 +530,15 @@ $text-sub: #94a3b8;
 
 .tabbar {
   flex-shrink: 0;
-  height: 60px;
+  height: 65px;
   display: flex;
-  background: #020617;
-  border-top: 1px solid #1e293b;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.98) 0%, rgba(2, 6, 23, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: env(safe-area-inset-bottom);
   transition: height 0.2s;
+  position: relative;
 
   &.hidden {
     height: 0;
@@ -504,14 +553,47 @@ $text-sub: #94a3b8;
     justify-content: center;
     flex-direction: column;
     color: $text-sub;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #22c55e, transparent);
+      border-radius: 2px;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
     &.active {
       color: $text-main;
-      background: #252d3a;
+      transform: translateY(-2px);
+
+      &::before {
+        transform: translateX(-50%) scaleX(1);
+      }
+
+      :deep(.el-icon) {
+        filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+      }
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
 
     span {
       font-size: 0.7rem;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    :deep(.el-icon) {
+      transition: all 0.25s ease;
     }
   }
 }

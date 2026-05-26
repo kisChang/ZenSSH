@@ -189,17 +189,21 @@ $red: #ef4444;
         width: 80px;
         height: 80px;
         margin-bottom: 20px;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       }
 
       h2 {
         font-size: 1.5rem;
         margin-bottom: 10px;
+        font-weight: 600;
       }
 
       .desc {
         font-size: 0.9rem;
         color: $text-sub;
         margin-bottom: 30px;
+        line-height: 1.5;
       }
     }
 
@@ -211,14 +215,19 @@ $red: #ef4444;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px;
-      margin-bottom: 10px;
-      background: $card;
-      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
       cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:active {
-        background: #334155;
+        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        transform: scale(0.98);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
 
       .credential-main {
@@ -226,64 +235,82 @@ $red: #ef4444;
         min-width: 0;
 
         .credential-name {
-          font-size: 1rem;
-          font-weight: 500;
-          margin-bottom: 6px;
+          font-size: 1.05rem;
+          font-weight: 600;
+          margin-bottom: 8px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          color: $text-main;
+          letter-spacing: 0.3px;
         }
 
         .credential-meta {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
 
           .usage-badge {
             font-size: 0.75rem;
             color: $text-sub;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 8px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
           }
         }
       }
 
       .arrow-icon {
         color: $text-sub;
-        margin-left: 10px;
+        margin-left: 12px;
+        padding: 6px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+
+        &:active {
+          background: rgba(255, 255, 255, 0.1);
+          color: $text-main;
+        }
       }
     }
 
     .fab {
       position: absolute;
-      right: 20px;
-      bottom: 20px;
-      width: 56px;
-      height: 56px;
-      background: $green;
+      right: 24px;
+      bottom: 24px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, $green 0%, #16a34a 100%);
       color: #052e16;
       border-radius: 50%;
-      font-size: 28px;
+      font-size: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:active {
+        transform: scale(0.9);
+        box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+      }
     }
   }
 
   .credential-form {
     height: 100%;
-    padding: 15px;
+    padding: 16px;
 
     .mobile-form {
       :deep(.el-form-item) {
-        margin-bottom: 15px;
+        margin-bottom: 18px;
       }
 
       :deep(.el-form-item__label) {
         color: $text-main;
         font-size: 0.9rem;
+        font-weight: 500;
       }
 
       :deep(.el-input__inner),
@@ -291,6 +318,8 @@ $red: #ef4444;
         background: $card;
         border-color: #334155;
         color: $text-main;
+        border-radius: 10px;
+        padding: 12px 14px;
 
         &::placeholder {
           color: $text-sub;
@@ -306,31 +335,38 @@ $red: #ef4444;
       display: flex;
       justify-content: center;
       margin-top: 30px;
-      padding-bottom: 20px;
+      padding-bottom: 30px;
+      gap: 12px;
     }
   }
 }
 
 .btn {
-  height: 44px;
+  height: 48px;
   border: none;
-  border-radius: 8px;
-  background: $green;
+  border-radius: 12px;
+  background: linear-gradient(135deg, $green 0%, #16a34a 100%);
   color: #052e16;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.96);
+  }
 
   &.btn-secondary {
-    background: $card;
+    background: linear-gradient(135deg, $card 0%, #252f3f 100%);
     color: $text-main;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   &.btn-danger {
-    background: $red;
+    background: linear-gradient(135deg, $red 0%, #dc2626 100%);
     color: white;
   }
 }

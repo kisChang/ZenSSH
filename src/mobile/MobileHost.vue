@@ -27,18 +27,24 @@
           drag-class="drag"
           chosen-class="chosen"
           :force-fallback="true"
+          handle=".drag-handle"
         >
           <template #item="{ element }">
-            <div class="config-item" @click.stop="handleClickConfig(element)">
-              <div class="title">{{ element.name }}</div>
-              <div class="subtitle">
-                <el-icon v-if="element.isCloud" color="#22c55e"><UploadFilled /></el-icon>
-                <template v-if="element.type === 'serial'">
-                  Serial: {{ element.portName }} @ {{ element.baudRate }}
-                </template>
-                <template v-else>
-                  {{ element.username }}@{{ element.host }}
-                </template>
+            <div class="config-item">
+              <div class="drag-handle" @click.stop>
+                <el-icon><Rank /></el-icon>
+              </div>
+              <div class="item-content" @click.stop="handleClickConfig(element)">
+                <div class="title">{{ element.name }}</div>
+                <div class="subtitle">
+                  <el-icon v-if="element.isCloud" color="#22c55e"><UploadFilled /></el-icon>
+                  <template v-if="element.type === 'serial'">
+                    Serial: {{ element.portName }} @ {{ element.baudRate }}
+                  </template>
+                  <template v-else>
+                    {{ element.username }}@{{ element.host }}
+                  </template>
+                </div>
               </div>
             </div>
           </template>
@@ -157,6 +163,10 @@ export default {
 
 <style scoped lang="scss">
 $green: #22c55e;
+$bg: #0f172a;
+$card: #1e293b;
+$text-main: #ffffff;
+$text-sub: #94a3b8;
 
 .host-content {
   width: 100vw;
@@ -165,41 +175,134 @@ $green: #22c55e;
   }
 
   .config-list {
-    padding: 0 10px;
+    padding: 12px 16px;
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 130px);
     user-select: none;
-    .config-item:first-child {
-      border-top: 1px solid #686868;
-    }
+
     .config-item {
+      display: flex;
+      align-items: center;
       text-align: left;
-      padding: 5px 10px;
-      border-bottom: 1px solid #686868;
-      transition: opacity 0.2s, transform 0.2s;
-      cursor: grab;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, $green 0%, rgba(34, 197, 94, 0.3) 100%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
       &:active {
-        background: #3d3d3d;
+        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        transform: scale(0.98);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+        &::before {
+          opacity: 1;
+        }
       }
+
       &.ghost {
-        opacity: 0.5;
-        background: #2d2d2d;
+        opacity: 0.4;
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        box-shadow: none;
       }
+
       &.drag {
-        opacity: 0.9;
-        background: #3d3d3d;
+        opacity: 0.95;
+        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.95) 100%);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        transform: rotate(2deg) scale(1.02);
       }
+
       &.chosen {
-        opacity: 0.8;
-        background: #4a4a4a;
+        opacity: 0.9;
+        background: linear-gradient(135deg, #3d4f63 0%, rgba(61, 79, 99, 0.9) 100%);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
       }
 
       .title {
-        font-size: 1.2rem;
-        margin-top: 5px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: $text-main;
+        margin-bottom: 6px;
+        letter-spacing: 0.3px;
       }
+
       .subtitle {
-        font-size: 0.9rem;
-        color: #bebebe;
+        font-size: 0.85rem;
+        color: $text-sub;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .el-icon {
+          flex-shrink: 0;
+        }
+      }
+
+      .drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        cursor: grab;
+        border-radius: 4px;
+        color: rgba(255, 255, 255, 0.2);
+        transition: all 0.2s ease;
+        margin-left: 4px;
+        order: 1;
+
+        &:active {
+          cursor: grabbing;
+          color: $green;
+        }
+
+        .el-icon {
+          font-size: 14px;
+        }
+      }
+      .item-content {
+        flex: 1;
+        min-width: 0;
+        padding: 4px 0;
+
+        .title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: $text-main;
+          margin-bottom: 6px;
+          letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+          font-size: 0.85rem;
+          color: $text-sub;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .el-icon {
+            flex-shrink: 0;
+          }
+        }
       }
     }
   }
@@ -209,6 +312,8 @@ $green: #22c55e;
 .app-icon {
   width: 80px;
   height: 80px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .discover {
@@ -220,16 +325,60 @@ $green: #22c55e;
 /* Floating button */
 .fab {
   position: absolute;
-  right: 20px;
-  bottom: 96px;
-  width: 56px;
-  height: 56px;
-  background: $green;
+  right: 24px;
+  bottom: 100px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, $green 0%, #16a34a 100%);
   color: #052e16;
   border-radius: 50%;
-  font-size: 28px;
+  font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.9);
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+  }
+}
+
+/* Pop drawer */
+:deep(.pop-drawer) {
+  background: linear-gradient(180deg, $bg 0%, darken($bg, 3%) 100%) !important;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px;
+
+  .btn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .el-alert {
+      border-radius: 12px;
+      border: none;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+
+      &.el-alert--primary {
+        background: linear-gradient(135deg, rgba(64, 158, 255, 0.2) 0%, rgba(64, 158, 255, 0.1) 100%);
+        border: 1px solid rgba(64, 158, 255, 0.3);
+      }
+
+      &.el-alert--warning {
+        background: linear-gradient(135deg, rgba(230, 162, 60, 0.2) 0%, rgba(230, 162, 60, 0.1) 100%);
+        border: 1px solid rgba(230, 162, 60, 0.3);
+      }
+    }
+  }
 }
 </style>
