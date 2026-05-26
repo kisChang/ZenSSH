@@ -72,6 +72,9 @@ export const appRunState = defineStore('AppRunningState', {
 export const appConfigStore = defineStore('AppConf', {
     persist: true,
     state: () => ({
+        // 主题: 'dark' 深色, 'light' 亮色
+        theme: 'dark',
+
         // 国际化
         locale: "zhCn",
 

@@ -114,6 +114,9 @@
     "webdavPassword": "Password",
     "webdavPassword_placeholder": "WebDAV password",
     "webdavLastSync": "Status",
-    "webdavLastSyncNo": "Never synced"
+    "webdavLastSyncNo": "Never synced",
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light"
   }
 }

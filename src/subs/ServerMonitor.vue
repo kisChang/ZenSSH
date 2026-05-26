@@ -84,11 +84,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/variables.scss";
-
 .server-monitor {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .stats-row {
@@ -110,13 +108,13 @@ export default {
   border-radius: 4px;
 
   .el-icon {
-    color: $color-primary;
+    color: var(--color-primary);
     flex-shrink: 0;
   }
 
   &.net-item {
     .net-rx {
-      color: $color-success-alt;
+      color: var(--color-success-alt);
       margin-left: 6px;
       display: inline-flex;
       align-items: center;
@@ -124,7 +122,7 @@ export default {
     }
 
     .net-tx {
-      color: $color-warning;
+      color: var(--color-warning);
       margin-left: 6px;
       display: inline-flex;
       align-items: center;
@@ -136,13 +134,13 @@ export default {
 .monitor-empty {
   display: flex;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-size: 12px;
 
   .is-loading {
     margin-top: 3px;
     animation: rotating 2s linear infinite;
-    color: $color-primary;
+    color: var(--color-primary);
   }
 }
 

@@ -191,11 +191,9 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/variables.scss";
-
 .terminal-tabs-welcome {
   height: calc(100vh - 110px);
-  background: $bg-header-start;
+  background: var(--bg-header-start);
   :deep(.el-empty) {
     padding-top: 80px;
     .el-empty__image {
@@ -205,14 +203,14 @@ export default {
     .el-empty__description {
       margin-top: 20px;
       p {
-        color: rgba(255, 255, 255, 0.6);
+        color: var(--text-secondary);
         font-size: 15px;
         line-height: 1.6;
       }
     }
   }
   :deep(.el-button--primary) {
-    background: $btn-primary-bg;
+    background: var(--btn-primary-bg);
     border: none;
     padding: 12px 28px;
     border-radius: 8px;
@@ -220,20 +218,20 @@ export default {
     font-weight: 500;
     transition: all 0.25s ease;
     &:hover {
-      background: $btn-primary-hover;
-      box-shadow: 0 6px 20px rgba(64, 158, 255, 0.45);
+      background: var(--btn-primary-hover);
+      box-shadow: 0 6px 20px var(--btn-shadow);
       transform: translateY(-2px);
     }
   }
 }
 .terminal-tabs {
   height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
-  background: linear-gradient(180deg, $bg-panel 0%, lighten($bg-panel, 3%) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--tabs-border-top);
 
   :deep(.el-tabs__header) {
-    background: linear-gradient(90deg, darken($bg-card, 3%) 0%, darken($bg-card, 5%) 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--tabs-header-border);
     margin: 0;
     padding: 0 8px;
   }
@@ -246,7 +244,7 @@ export default {
     padding: 0 16px;
     height: 38px;
     line-height: 38px;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-secondary);
     font-size: 13px;
     background: transparent;
     transition: all 0.2s ease;
@@ -254,16 +252,16 @@ export default {
     margin: 4px 2px 0;
 
     &:hover {
-      color: $text-primary;
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      background: var(--tabs-item-hover-bg);
     }
   }
 
   :deep(.el-tabs__item.is-active) {
-    color: $text-primary;
-    background: linear-gradient(180deg, #252535 0%, #1e1e2a 100%);
+    color: var(--text-primary);
+    background: linear-gradient(180deg, var(--tabs-item-active-bg-start) 0%, var(--tabs-item-active-bg-end) 100%);
     font-weight: 500;
-    box-shadow: 0 -2px 8px rgba(64, 158, 255, 0.15);
+    box-shadow: 0 -2px 8px var(--tabs-item-active-shadow);
   }
 
   :deep(.el-tabs__active-bar) {
@@ -284,7 +282,7 @@ export default {
     opacity: 0.6;
     transition: all 0.2s ease;
     &:hover {
-      background: rgba(239, 68, 68, 0.9);
+      background: var(--tabs-close-hover-bg);
       color: #FFF;
       opacity: 1;
     }

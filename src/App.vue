@@ -188,6 +188,7 @@ export default {
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
+  color: var(--text-primary, #fff);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -199,6 +200,7 @@ export default {
 html, body {
   padding: 0;
   margin: 0;
+  color: inherit;
 }
 
 .terminal .xterm-helpers {

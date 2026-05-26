@@ -159,12 +159,12 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #333;
-  color: #fff;
+  background: var(--bg-panel);
+  color: var(--text-primary);
 
   .toolbar {
     padding: 10px;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-start;
   }

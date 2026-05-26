@@ -61,4 +61,7 @@ import client from "./request.js"
 import {appConfigStore} from "@/store.js";
 app.config.globalProperties.$axios = client
 
+import { initTheme } from "@/utils/theme.js";
+initTheme();
+
 app.mount("#app");

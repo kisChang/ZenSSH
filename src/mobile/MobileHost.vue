@@ -162,8 +162,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/variables.scss";
-
 .host-content {
   width: 100vw;
   :deep(.conn-form) {
@@ -181,10 +179,9 @@ export default {
       text-align: left;
       padding: 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: var(--bg-card);
       border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
@@ -196,15 +193,14 @@ export default {
         top: 0;
         bottom: 0;
         width: 3px;
-        background: linear-gradient(180deg, $color-success-alt 0%, rgba(34, 197, 94, 0.3) 100%);
+        background: linear-gradient(180deg, var(--color-success-alt) 0%, rgba(34, 197, 94, 0.3) 100%);
         opacity: 0;
         transition: opacity 0.2s ease;
       }
 
       &:active {
-        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        background: var(--bg-active);
         transform: scale(0.98);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
         &::before {
           opacity: 1;
@@ -213,36 +209,34 @@ export default {
 
       &.ghost {
         opacity: 0.4;
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px dashed rgba(255, 255, 255, 0.2);
+        background: var(--bg-hover);
+        border: 1px dashed var(--border-color-active);
         box-shadow: none;
       }
 
       &.drag {
         opacity: 0.95;
-        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.95) 100%);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        background: var(--bg-active);
         transform: rotate(2deg) scale(1.02);
       }
 
       &.chosen {
         opacity: 0.9;
-        background: linear-gradient(135deg, #3d4f63 0%, rgba(61, 79, 99, 0.9) 100%);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        background: var(--bg-active);
+        border: 1px solid var(--color-success-alt);
       }
 
       .title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: $text-primary;
+        color: var(--text-primary);
         margin-bottom: 6px;
         letter-spacing: 0.3px;
       }
 
       .subtitle {
         font-size: 0.85rem;
-        color: $text-secondary;
+        color: var(--text-secondary);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -261,14 +255,14 @@ export default {
         flex-shrink: 0;
         cursor: grab;
         border-radius: 4px;
-        color: rgba(255, 255, 255, 0.2);
+        color: var(--text-muted);
         transition: all 0.2s ease;
         margin-left: 4px;
         order: 1;
 
         &:active {
           cursor: grabbing;
-          color: $color-success-alt;
+          color: var(--color-success-alt);
         }
 
         .el-icon {
@@ -283,14 +277,14 @@ export default {
         .title {
           font-size: 1.1rem;
           font-weight: 600;
-          color: $text-primary;
+          color: var(--text-primary);
           margin-bottom: 6px;
           letter-spacing: 0.3px;
         }
 
         .subtitle {
           font-size: 0.85rem;
-          color: $text-secondary;
+          color: var(--text-secondary);
           display: flex;
           align-items: center;
           gap: 6px;
@@ -309,12 +303,12 @@ export default {
   width: 80px;
   height: 80px;
   border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .discover {
   margin-top: 20px;
-  color: $color-success-alt;
+  color: var(--color-success-alt);
   font-size: 14px;
 }
 
@@ -325,25 +319,24 @@ export default {
   bottom: 100px;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
-  color: #052e16;
+  background: var(--color-success);
+  color: #fff;
   border-radius: 50%;
   font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:active {
     transform: scale(0.9);
-    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
   }
 }
 
 /* Pop drawer */
 :deep(.pop-drawer) {
-  background: linear-gradient(180deg, $bg-primary 0%, darken($bg-primary, 3%) 100%) !important;
+  background: var(--bg-primary);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding: 20px;

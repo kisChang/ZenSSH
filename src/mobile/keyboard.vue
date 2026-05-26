@@ -272,7 +272,7 @@ export default {
 :deep(.key-btn-toggle) {
   padding: 6px 0;
   svg {
-    fill: #FFF;
+    fill: var(--text-primary);
     width: 30px;
     height: 25px;
   }
@@ -306,8 +306,8 @@ button {
   margin: 2px;
   padding: 6px 0;
   font-size: 16px;
-  background: #333;
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text-primary);
   border: none;
   border-radius: 6px;
   height: 36px !important;
@@ -320,7 +320,7 @@ button {
   }
 
   &.active {
-    background: #007bff;
+    background: var(--color-primary);
     &.keep {
       font-size: 15px;
     }

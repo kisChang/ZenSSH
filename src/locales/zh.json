@@ -114,6 +114,9 @@
     "webdavPassword": "密码",
     "webdavPassword_placeholder": "WebDAV密码",
     "webdavLastSync": "同步状态",
-    "webdavLastSyncNo": "从未同步"
+    "webdavLastSyncNo": "从未同步",
+    "theme": "主题",
+    "themeDark": "深色",
+    "themeLight": "亮色"
   }
 }

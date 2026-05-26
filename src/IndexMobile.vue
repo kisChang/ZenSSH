@@ -268,16 +268,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./styles/variables.scss";
-
 .hosts-page {
   position: fixed;
   top: env(safe-area-inset-top);
   bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
-  background: $bg-primary;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
 }
@@ -310,10 +308,8 @@ export default {
   align-items: center;
   padding: 0 16px;
   font-size: 16px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-header-start);
+  border-bottom: 1px solid var(--border-color);
   position: relative;
   z-index: 10;
 
@@ -330,10 +326,7 @@ export default {
     text-align: center;
     font-weight: 600;
     font-size: 18px;
-    background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
   }
 
   .right {
@@ -360,7 +353,7 @@ export default {
   .desc {
     margin-top: 8px;
     font-size: 14px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.5;
   }
 
@@ -374,7 +367,7 @@ export default {
       align-items: center;
       justify-content: center;
       height: 60vh;
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 16px;
     }
     .conn-list-scroll {
@@ -386,16 +379,14 @@ export default {
       align-items: center;
       padding: 14px 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: var(--bg-card);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:active {
-        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        background: var(--bg-active);
         transform: scale(0.98);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
     }
     .conn-icon-wrap {
@@ -404,10 +395,10 @@ export default {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      background: var(--bg-hover);
       border-radius: 12px;
       flex-shrink: 0;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color-light);
     }
     .conn-info {
       flex: 1;
@@ -416,7 +407,7 @@ export default {
       .conn-title {
         font-size: 16px;
         font-weight: 600;
-        color: $text-primary;
+        color: var(--text-primary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -424,20 +415,20 @@ export default {
       }
       .conn-state {
         font-size: 12px;
-        color: $text-secondary;
+        color: var(--text-secondary);
         margin-top: 2px;
       }
     }
     .conn-arrow {
-      color: $text-secondary;
+      color: var(--text-secondary);
       flex-shrink: 0;
       padding: 8px;
       border-radius: 50%;
       transition: all 0.2s ease;
 
       &:active {
-        background: rgba(255, 255, 255, 0.1);
-        color: #ef4444;
+        background: var(--bg-hover);
+        color: var(--color-error);
       }
     }
     .port-forward-list {
@@ -529,10 +520,8 @@ export default {
   flex-shrink: 0;
   height: 65px;
   display: flex;
-  background: linear-gradient(180deg, rgba(2, 6, 23, 0.98) 0%, rgba(2, 6, 23, 0.95) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-header-start);
+  border-top: 1px solid var(--border-color);
   padding-bottom: env(safe-area-inset-bottom);
   transition: height 0.2s;
   position: relative;
@@ -549,7 +538,7 @@ export default {
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    color: $text-secondary;
+    color: var(--text-muted);
     position: relative;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -561,13 +550,13 @@ export default {
       transform: translateX(-50%) scaleX(0);
       width: 40px;
       height: 3px;
-      background: linear-gradient(90deg, transparent, #22c55e, transparent);
+      background: var(--gradient-active);
       border-radius: 2px;
       transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &.active {
-      color: $text-primary;
+      color: var(--color-primary);
       transform: translateY(-2px);
 
       &::before {
@@ -575,7 +564,7 @@ export default {
       }
 
       :deep(.el-icon) {
-        filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+        filter: drop-shadow(0 0 8px var(--color-primary-light));
       }
     }
 
@@ -601,7 +590,7 @@ export default {
   bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
-  background: $bg-card;
+  background: var(--bg-card);
   z-index: 10;
   border-top: 1px solid #1e293b;
   .monitor-panel-header {
@@ -609,16 +598,16 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 10px 16px;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid var(--border-color);
     font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
     .close-icon {
       font-size: 18px;
       cursor: pointer;
-      color: #94a3b8;
+      color: var(--text-muted);
       &:hover {
-        color: #fff;
+        color: var(--text-primary);
       }
     }
   }

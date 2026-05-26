@@ -84,6 +84,12 @@
         <el-option label="English" value="en"></el-option>
       </el-select>
     </el-form-item>
+    <el-form-item :label="$t('setting.theme')">
+      <el-select v-model="settingForm.theme" @change="handleThemeChange">
+        <el-option :label="$t('setting.themeDark')" value="dark"></el-option>
+        <el-option :label="$t('setting.themeLight')" value="light"></el-option>
+      </el-select>
+    </el-form-item>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
       <div class="btn" @click="handleSave">{{ $t('common.submit') }}</div>
@@ -96,6 +102,7 @@ import {appConfigStore, appRunState, useMngStore} from "@/store.js";
 import {isMobile} from "@/commons.js";
 import {relaunch} from "@tauri-apps/plugin-process"
 import {vibrate} from "@tauri-apps/plugin-haptics";
+import {applyTheme} from "@/utils/theme.js";
 
 export default {
   name: "SettingForm",
@@ -129,6 +136,9 @@ export default {
   methods: {
     testVibrate(){
       vibrate(this.settingForm.virtualKeyboardVibrate).catch(() => {});
+    },
+    handleThemeChange(theme) {
+      applyTheme(theme);
     },
 
     handleSave(){

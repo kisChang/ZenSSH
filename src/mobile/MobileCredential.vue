@@ -156,12 +156,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/variables.scss";
-
 .credential-mobile {
   height: 100%;
-  background: $bg-primary;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 
   .credential-list {
     height: 100%;
@@ -185,7 +183,7 @@ export default {
         height: 80px;
         margin-bottom: 20px;
         border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       h2 {
@@ -196,7 +194,7 @@ export default {
 
       .desc {
         font-size: 0.9rem;
-        color: $text-secondary;
+        color: var(--text-secondary);
         margin-bottom: 30px;
         line-height: 1.5;
       }
@@ -212,17 +210,15 @@ export default {
       justify-content: space-between;
       padding: 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: var(--bg-card);
       border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:active {
-        background: linear-gradient(135deg, #334155 0%, rgba(51, 65, 85, 0.9) 100%);
+        background: var(--bg-active);
         transform: scale(0.98);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
 
       .credential-main {
@@ -236,7 +232,7 @@ export default {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: $text-primary;
+          color: var(--text-primary);
           letter-spacing: 0.3px;
         }
 
@@ -247,17 +243,17 @@ export default {
 
           .usage-badge {
             font-size: 0.75rem;
-            color: $text-secondary;
-            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            background: var(--bg-hover);
             padding: 3px 10px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color-light);
           }
         }
       }
 
       .arrow-icon {
-        color: $text-secondary;
+        color: var(--text-secondary);
         margin-left: 12px;
         padding: 6px;
         border-radius: 8px;
@@ -265,7 +261,7 @@ export default {
 
         &:active {
           background: rgba(255, 255, 255, 0.1);
-          color: $text-primary;
+          color: var(--text-primary);
         }
       }
     }
@@ -276,19 +272,18 @@ export default {
       bottom: 24px;
       width: 60px;
       height: 60px;
-      background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
-      color: #052e16;
+      background: var(--color-success);
+      color: #fff;
       border-radius: 50%;
       font-size: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+      box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:active {
         transform: scale(0.9);
-        box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
       }
     }
   }
@@ -303,26 +298,26 @@ export default {
       }
 
       :deep(.el-form-item__label) {
-        color: $text-primary;
+        color: var(--text-primary);
         font-size: 0.9rem;
         font-weight: 500;
       }
 
       :deep(.el-input__inner),
       :deep(.el-textarea__inner) {
-        background: $bg-card;
+        background: var(--bg-card);
         border-color: #334155;
-        color: $text-primary;
+        color: var(--text-primary);
         border-radius: 10px;
         padding: 12px 14px;
 
         &::placeholder {
-          color: $text-secondary;
+          color: var(--text-secondary);
         }
       }
 
       :deep(.el-radio) {
-        color: $text-primary;
+        color: var(--text-primary);
       }
     }
 
@@ -340,8 +335,8 @@ export default {
   height: 48px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
-  color: #052e16;
+  background: var(--color-success);
+  color: #fff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -355,13 +350,13 @@ export default {
   }
 
   &.btn-secondary {
-    background: linear-gradient(135deg, $bg-card 0%, #252f3f 100%);
-    color: $text-primary;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
   }
 
   &.btn-danger {
-    background: linear-gradient(135deg, $color-error-alt 0%, #dc2626 100%);
+    background: var(--color-error);
     color: white;
   }
 }

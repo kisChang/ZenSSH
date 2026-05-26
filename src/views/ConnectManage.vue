@@ -179,8 +179,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "../styles/variables.scss";
-
 @media (max-width: 768px) {
   :deep(.el-dialog) {
     width: 90% !important;
@@ -191,48 +189,48 @@ export default {
   padding: 5px;
   margin: 6px;
   border-radius: 8px;
-  background: linear-gradient(145deg, $bg-card 0%, darken($bg-card, 5%) 100%);
+  background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: grab;
   transition: all 0.25s ease;
   &:hover {
-    background: linear-gradient(145deg, lighten($bg-card, 5%) 0%, $bg-card 100%);
-    border-color: $border-color-active;
+    background: var(--bg-card);
+    border-color: var(--border-color-active);
     box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
     transform: translateY(-1px);
     .title {
-      color: $color-primary;
+      color: var(--color-primary);
     }
     .subtitle {
-      color: rgba(255, 255, 255, 0.8);
+      color: var(--text-secondary);
     }
   }
   &.ghost {
     opacity: 0.5;
-    background-color: darken($bg-card, 5%);
+    background-color: var(--bg-card);
   }
   &.drag {
     opacity: 0.9;
-    background-color: darken($bg-card, 10%);
+    background-color: var(--bg-card);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
   &.chosen {
     opacity: 0.8;
-    background-color: darken($bg-card, 15%);
+    background-color: var(--bg-card);
   }
   .title {
     font-size: 14px;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.5;
     margin-bottom: 4px;
     transition: color 0.2s ease;
   }
   .subtitle {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
     transition: color 0.2s ease;
     :deep(.el-icon svg) {
       width: 12px;
@@ -242,18 +240,17 @@ export default {
   }
 }
 .menu {
-  height: 100%;
   padding-top: 8px;
 }
 
 :deep(.el-button--primary) {
-  background: $btn-primary-bg;
+  background: var(--btn-primary-bg);
   border: none;
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.2s ease;
   &:hover {
-    background: $btn-primary-hover;
+    background: var(--btn-primary-hover);
     box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
     transform: translateY(-1px);
   }
