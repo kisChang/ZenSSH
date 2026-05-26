@@ -19,21 +19,30 @@
     </div>
     <div v-else-if="configList.length" style="text-align: center;">
       <el-scrollbar class="config-list">
-        <div v-for="once of configList"
-             class="config-item"
-             @click="handleClickConfig(once)"
-             :key="once.host">
-          <div class="title">{{ once.name }}</div>
-          <div class="subtitle">
-            <el-icon v-if="once.isCloud" color="#22c55e"><UploadFilled /></el-icon>
-            <template v-if="once.type === 'serial'">
-              Serial: {{ once.portName }} @ {{ once.baudRate }}
-            </template>
-            <template v-else>
-              {{ once.username }}@{{ once.host }}
-            </template>
-          </div>
-        </div>
+        <draggable
+          v-model="configListModel"
+          item-key="configId"
+          animation="200"
+          ghost-class="ghost"
+          drag-class="drag"
+          chosen-class="chosen"
+          :force-fallback="true"
+        >
+          <template #item="{ element }">
+            <div class="config-item" @click.stop="handleClickConfig(element)">
+              <div class="title">{{ element.name }}</div>
+              <div class="subtitle">
+                <el-icon v-if="element.isCloud" color="#22c55e"><UploadFilled /></el-icon>
+                <template v-if="element.type === 'serial'">
+                  Serial: {{ element.portName }} @ {{ element.baudRate }}
+                </template>
+                <template v-else>
+                  {{ element.username }}@{{ element.host }}
+                </template>
+              </div>
+            </div>
+          </template>
+        </draggable>
       </el-scrollbar>
     </div>
     <div v-else style="text-align: center;">
@@ -69,10 +78,11 @@
 <script>
 import ConnectForm, {DEFAULT_CONFIG} from "@/subs/ConnectForm.vue";
 import {useMngStore} from "@/store.js";
+import draggable from "vuedraggable";
 
 export default {
   name: "MobileHost",
-  components: {ConnectForm},
+  components: {ConnectForm, draggable},
   data() {
     const appMng = useMngStore();
     const defaultConfig = Object.assign({}, DEFAULT_CONFIG);
@@ -86,7 +96,15 @@ export default {
   },
   computed: {
     configList() {
-      return this.appMng.configList
+      return this.appMng.sortedConfigList
+    },
+    configListModel: {
+      get() {
+        return this.appMng.sortedConfigList
+      },
+      set(newList) {
+        this.appMng.reorderConfig(newList.map(c => c.configId))
+      }
     }
   },
   methods: {
@@ -157,8 +175,22 @@ $green: #22c55e;
       text-align: left;
       padding: 5px 10px;
       border-bottom: 1px solid #686868;
+      transition: opacity 0.2s, transform 0.2s;
+      cursor: grab;
       &:active {
         background: #3d3d3d;
+      }
+      &.ghost {
+        opacity: 0.5;
+        background: #2d2d2d;
+      }
+      &.drag {
+        opacity: 0.9;
+        background: #3d3d3d;
+      }
+      &.chosen {
+        opacity: 0.8;
+        background: #4a4a4a;
       }
 
       .title {

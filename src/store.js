@@ -432,13 +432,21 @@ export const useMngStore = defineStore('UserConf', {
                 label: item.name,
                 credential: item
             }));
+        },
+        // 获取排序后的配置列表
+        sortedConfigList(state) {
+            return [...state.configList].sort((a, b) => {
+                const orderA = a.sortOrder ?? 0;
+                const orderB = b.sortOrder ?? 0;
+                return orderA - orderB;
+            });
         }
     },
     actions: {
         // 根据当前版本号逐步执行升级操作
         migrateOldConfigs() {
             const currentVersion = this._version || 0;
-            // 版本 0 -> 1：引入凭据系统
+            // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据，并添加排序字段
             if (currentVersion < 1) {
                 this.migrateV0ToV1();
             }
@@ -449,10 +457,11 @@ export const useMngStore = defineStore('UserConf', {
             }
         },
 
-        // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据
+        // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据，添加排序字段
         migrateV0ToV1() {
-            console.log('[Migrate] Upgrading config from v0 to v1 (credential system)');
+            console.log('[Migrate] Upgrading config from v0 to v1 (credential system + sortOrder)');
 
+            // 1. 提取凭据
             let migratedCount = 0;
             this.configList.forEach(config => {
                 // 只处理 SSH 类型且有认证信息的配置
@@ -480,6 +489,11 @@ export const useMngStore = defineStore('UserConf', {
             if (migratedCount > 0) {
                 console.log(`[Migrate] Migrated ${migratedCount} configs to new credential system`);
             }
+
+            // 2. 添加排序字段
+            this.configList.forEach((config, index) => {
+                config.sortOrder = index;
+            });
         },
 
         // 添加凭据
@@ -614,6 +628,31 @@ export const useMngStore = defineStore('UserConf', {
                 backendConfig[item.configId] = item;
             })
             await invoke('sync_config', { configMap: backendConfig });
+        },
+
+        /**
+         * 重新排序配置列表
+         * @param {Array} newOrder - 新的排序顺序（configId 数组）
+         */
+        reorderConfig(newOrder) {
+            // 根据新顺序重新排列 configList
+            const sortedList = [];
+            newOrder.forEach((configId, index) => {
+                const config = this.configList.find(c => c.configId === configId);
+                if (config) {
+                    config.sortOrder = index;
+                    sortedList.push(config);
+                }
+            });
+            // 添加可能遗漏的配置（确保所有配置都保留）
+            this.configList.forEach(config => {
+                if (!newOrder.includes(config.configId)) {
+                    config.sortOrder = sortedList.length;
+                    sortedList.push(config);
+                }
+            });
+            this.configList = sortedList;
+            this.syncConfig(this.configList).then();
         },
     },
 })

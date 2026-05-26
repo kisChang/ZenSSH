@@ -1,23 +1,31 @@
 <template>
   <div class="menu">
-    <div v-if="configList.length > 0">
-      <div v-for="once of configList"
-           @dblclick="configReConnect(once)"
-           class="config-item"
-           @contextmenu="handleContextmenu($event, once)"
-           :key="once.host">
-        <div class="title">{{ once.name }}</div>
-        <div class="subtitle">
-          <el-icon v-if="once.isCloud" color="#22c55e"><UploadFilled /></el-icon>
-          <template v-if="once.type === 'serial'">
-            Serial: {{ once.portName }} @ {{ once.baudRate }}
-          </template>
-          <template v-else>
-            {{ once.username }}@{{ once.host }}
-          </template>
+    <draggable
+        v-if="configList.length > 0"
+        v-model="configListModel"
+        item-key="configId"
+        animation="200"
+        ghost-class="ghost"
+        drag-class="drag"
+        chosen-class="chosen"
+        :force-fallback="true">
+      <template #item="{ element }">
+        <div class="config-item" @dblclick.stop="configReConnect(element)" @contextmenu.stop="handleContextmenu($event, element)">
+          <div class="title">{{ element.name }}</div>
+          <div class="subtitle">
+            <el-icon v-if="element.isCloud" color="#22c55e">
+              <UploadFilled/>
+            </el-icon>
+            <template v-if="element.type === 'serial'">
+              Serial: {{ element.portName }} @ {{ element.baudRate }}
+            </template>
+            <template v-else>
+              {{ element.username }}@{{ element.host }}
+            </template>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </draggable>
     <div style="padding-top: 10px;text-align: center;">
       <el-button @click="showConnectAdd" type="primary">{{ $t('main.quickConnect') }}</el-button>
     </div>
@@ -68,10 +76,11 @@
 import ConnectForm, {DEFAULT_CONFIG} from "@/subs/ConnectForm.vue";
 import {useMngStore, useTabsStore} from "@/store.js";
 import {isMobile} from "@/commons.js";
+import draggable from "vuedraggable";
 
 export default {
   name: "ConnectManage",
-  components: {ConnectForm},
+  components: {ConnectForm, draggable},
   data() {
     const appMng = useMngStore();
     const defaultConfig = Object.assign({}, DEFAULT_CONFIG);
@@ -90,7 +99,16 @@ export default {
   },
   computed: {
     configList() {
-      return this.appMng.configList
+      return this.appMng.sortedConfigList
+    },
+    configListModel: {
+      get() {
+        return this.appMng.sortedConfigList
+      },
+      set(newList) {
+        console.log('[ConnectManage] configListModel setter called:', newList.map(c => c.name))
+        this.appMng.reorderConfig(newList.map(c => c.configId))
+      }
     }
   },
   mounted() {
@@ -170,7 +188,21 @@ export default {
 .config-item {
   padding: 3px 10px 0;
   border-bottom: 1px solid #DDD;
-  cursor: pointer;
+  user-select: none;
+  cursor: grab;
+  transition: opacity 0.2s, background-color 0.2s;
+  &.ghost {
+    opacity: 0.5;
+    background-color: #444;
+  }
+  &.drag {
+    opacity: 0.9;
+    background-color: #555;
+  }
+  &.chosen {
+    opacity: 0.8;
+    background-color: #4a4a4a;
+  }
   .title {
     font-size: 1.1rem;
     line-height: 1.5rem;
