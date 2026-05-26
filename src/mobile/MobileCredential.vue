@@ -156,17 +156,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$bg: #0f172a;
-$card: #1e293b;
-$text-main: #ffffff;
-$text-sub: #94a3b8;
-$green: #22c55e;
-$red: #ef4444;
+@import "../styles/variables.scss";
 
 .credential-mobile {
   height: 100%;
-  background: $bg;
-  color: $text-main;
+  background: $bg-primary;
+  color: $text-primary;
 
   .credential-list {
     height: 100%;
@@ -201,7 +196,7 @@ $red: #ef4444;
 
       .desc {
         font-size: 0.9rem;
-        color: $text-sub;
+        color: $text-secondary;
         margin-bottom: 30px;
         line-height: 1.5;
       }
@@ -217,7 +212,7 @@ $red: #ef4444;
       justify-content: space-between;
       padding: 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -241,7 +236,7 @@ $red: #ef4444;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: $text-main;
+          color: $text-primary;
           letter-spacing: 0.3px;
         }
 
@@ -252,7 +247,7 @@ $red: #ef4444;
 
           .usage-badge {
             font-size: 0.75rem;
-            color: $text-sub;
+            color: $text-secondary;
             background: rgba(255, 255, 255, 0.08);
             padding: 3px 10px;
             border-radius: 12px;
@@ -262,7 +257,7 @@ $red: #ef4444;
       }
 
       .arrow-icon {
-        color: $text-sub;
+        color: $text-secondary;
         margin-left: 12px;
         padding: 6px;
         border-radius: 8px;
@@ -270,7 +265,7 @@ $red: #ef4444;
 
         &:active {
           background: rgba(255, 255, 255, 0.1);
-          color: $text-main;
+          color: $text-primary;
         }
       }
     }
@@ -281,7 +276,7 @@ $red: #ef4444;
       bottom: 24px;
       width: 60px;
       height: 60px;
-      background: linear-gradient(135deg, $green 0%, #16a34a 100%);
+      background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
       color: #052e16;
       border-radius: 50%;
       font-size: 32px;
@@ -308,26 +303,26 @@ $red: #ef4444;
       }
 
       :deep(.el-form-item__label) {
-        color: $text-main;
+        color: $text-primary;
         font-size: 0.9rem;
         font-weight: 500;
       }
 
       :deep(.el-input__inner),
       :deep(.el-textarea__inner) {
-        background: $card;
+        background: $bg-card;
         border-color: #334155;
-        color: $text-main;
+        color: $text-primary;
         border-radius: 10px;
         padding: 12px 14px;
 
         &::placeholder {
-          color: $text-sub;
+          color: $text-secondary;
         }
       }
 
       :deep(.el-radio) {
-        color: $text-main;
+        color: $text-primary;
       }
     }
 
@@ -345,7 +340,7 @@ $red: #ef4444;
   height: 48px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, $green 0%, #16a34a 100%);
+  background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
   color: #052e16;
   font-size: 1rem;
   font-weight: 600;
@@ -360,13 +355,13 @@ $red: #ef4444;
   }
 
   &.btn-secondary {
-    background: linear-gradient(135deg, $card 0%, #252f3f 100%);
-    color: $text-main;
+    background: linear-gradient(135deg, $bg-card 0%, #252f3f 100%);
+    color: $text-primary;
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   &.btn-danger {
-    background: linear-gradient(135deg, $red 0%, #dc2626 100%);
+    background: linear-gradient(135deg, $color-error-alt 0%, #dc2626 100%);
     color: white;
   }
 }

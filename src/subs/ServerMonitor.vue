@@ -84,6 +84,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@import "../styles/variables.scss";
+
 .server-monitor {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
@@ -108,13 +110,13 @@ export default {
   border-radius: 4px;
 
   .el-icon {
-    color: #409EFF;
+    color: $color-primary;
     flex-shrink: 0;
   }
 
   &.net-item {
     .net-rx {
-      color: #22c55e;
+      color: $color-success-alt;
       margin-left: 6px;
       display: inline-flex;
       align-items: center;
@@ -122,7 +124,7 @@ export default {
     }
 
     .net-tx {
-      color: #f59e0b;
+      color: $color-warning;
       margin-left: 6px;
       display: inline-flex;
       align-items: center;
@@ -140,7 +142,7 @@ export default {
   .is-loading {
     margin-top: 3px;
     animation: rotating 2s linear infinite;
-    color: #409EFF;
+    color: $color-primary;
   }
 }
 

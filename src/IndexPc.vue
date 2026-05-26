@@ -172,10 +172,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import "./styles/variables.scss";
+
 .header {
   height: 40px;
   padding: 0;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, $bg-header-start 0%, $bg-header-end 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -184,13 +186,13 @@ export default {
 }
 :deep(.el-splitter) {
   height: calc(100vh - 40px);
-  background: #0d0d14;
+  background: $bg-panel;
 }
 :deep(.el-splitter__bar) {
-  background: rgba(255, 255, 255, 0.08);
+  background: $splitter-bg;
   transition: background 0.2s ease;
   &:hover {
-    background: rgba(64, 158, 255, 0.4);
+    background: $splitter-hover;
   }
 }
 :deep(.el-splitter__bar::after) {
@@ -230,7 +232,7 @@ export default {
   flex-shrink: 0;
   height: 28px;
   padding: 0 16px;
-  background: linear-gradient(90deg, #12121a 0%, #181824 100%);
+  background: linear-gradient(90deg, $bg-status-start 0%, $bg-status-end 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
@@ -240,13 +242,13 @@ export default {
 
 .status-bar-empty {
   font-size: 12px;
-  color: #64748b;
+  color: $text-muted;
 }
 
 .el-menu--horizontal {
   --el-menu-horizontal-height: 100%;
-  --el-menu-hover-bg-color: rgba(64, 158, 255, 0.15);
-  --el-menu-active-color: #409EFF;
+  --el-menu-hover-bg-color: $bg-hover;
+  --el-menu-active-color: $color-primary;
   background: transparent;
   border-bottom: none;
   user-select: none;
@@ -258,7 +260,7 @@ export default {
     border-radius: 4px;
     margin: 4px 4px 0;
     &:hover {
-      color: #fff !important;
+      color: $text-primary !important;
       background: rgba(64, 158, 255, 0.2) !important;
     }
     &:focus {

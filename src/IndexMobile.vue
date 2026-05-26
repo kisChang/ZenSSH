@@ -268,10 +268,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$bg: #0f172a;
-$card: #1e293b;
-$text-main: #ffffff;
-$text-sub: #94a3b8;
+@import "./styles/variables.scss";
 
 .hosts-page {
   position: fixed;
@@ -279,8 +276,8 @@ $text-sub: #94a3b8;
   bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
-  background: $bg;
-  color: $text-main;
+  background: $bg-primary;
+  color: $text-primary;
   display: flex;
   flex-direction: column;
 }
@@ -363,7 +360,7 @@ $text-sub: #94a3b8;
   .desc {
     margin-top: 8px;
     font-size: 14px;
-    color: $text-sub;
+    color: $text-secondary;
     line-height: 1.5;
   }
 
@@ -377,7 +374,7 @@ $text-sub: #94a3b8;
       align-items: center;
       justify-content: center;
       height: 60vh;
-      color: $text-sub;
+      color: $text-secondary;
       font-size: 16px;
     }
     .conn-list-scroll {
@@ -389,7 +386,7 @@ $text-sub: #94a3b8;
       align-items: center;
       padding: 14px 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -419,7 +416,7 @@ $text-sub: #94a3b8;
       .conn-title {
         font-size: 16px;
         font-weight: 600;
-        color: $text-main;
+        color: $text-primary;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -427,12 +424,12 @@ $text-sub: #94a3b8;
       }
       .conn-state {
         font-size: 12px;
-        color: $text-sub;
+        color: $text-secondary;
         margin-top: 2px;
       }
     }
     .conn-arrow {
-      color: $text-sub;
+      color: $text-secondary;
       flex-shrink: 0;
       padding: 8px;
       border-radius: 50%;
@@ -552,7 +549,7 @@ $text-sub: #94a3b8;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    color: $text-sub;
+    color: $text-secondary;
     position: relative;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -570,7 +567,7 @@ $text-sub: #94a3b8;
     }
 
     &.active {
-      color: $text-main;
+      color: $text-primary;
       transform: translateY(-2px);
 
       &::before {
@@ -604,7 +601,7 @@ $text-sub: #94a3b8;
   bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
-  background: $card;
+  background: $bg-card;
   z-index: 10;
   border-top: 1px solid #1e293b;
   .monitor-panel-header {

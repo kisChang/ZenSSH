@@ -162,11 +162,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$green: #22c55e;
-$bg: #0f172a;
-$card: #1e293b;
-$text-main: #ffffff;
-$text-sub: #94a3b8;
+@import "../styles/variables.scss";
 
 .host-content {
   width: 100vw;
@@ -185,7 +181,7 @@ $text-sub: #94a3b8;
       text-align: left;
       padding: 16px;
       margin-bottom: 12px;
-      background: linear-gradient(135deg, $card 0%, rgba(30, 41, 59, 0.8) 100%);
+      background: linear-gradient(135deg, $bg-card 0%, rgba(30, 41, 59, 0.8) 100%);
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -200,7 +196,7 @@ $text-sub: #94a3b8;
         top: 0;
         bottom: 0;
         width: 3px;
-        background: linear-gradient(180deg, $green 0%, rgba(34, 197, 94, 0.3) 100%);
+        background: linear-gradient(180deg, $color-success-alt 0%, rgba(34, 197, 94, 0.3) 100%);
         opacity: 0;
         transition: opacity 0.2s ease;
       }
@@ -239,14 +235,14 @@ $text-sub: #94a3b8;
       .title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: $text-main;
+        color: $text-primary;
         margin-bottom: 6px;
         letter-spacing: 0.3px;
       }
 
       .subtitle {
         font-size: 0.85rem;
-        color: $text-sub;
+        color: $text-secondary;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -272,7 +268,7 @@ $text-sub: #94a3b8;
 
         &:active {
           cursor: grabbing;
-          color: $green;
+          color: $color-success-alt;
         }
 
         .el-icon {
@@ -287,14 +283,14 @@ $text-sub: #94a3b8;
         .title {
           font-size: 1.1rem;
           font-weight: 600;
-          color: $text-main;
+          color: $text-primary;
           margin-bottom: 6px;
           letter-spacing: 0.3px;
         }
 
         .subtitle {
           font-size: 0.85rem;
-          color: $text-sub;
+          color: $text-secondary;
           display: flex;
           align-items: center;
           gap: 6px;
@@ -318,7 +314,7 @@ $text-sub: #94a3b8;
 
 .discover {
   margin-top: 20px;
-  color: $green;
+  color: $color-success-alt;
   font-size: 14px;
 }
 
@@ -329,7 +325,7 @@ $text-sub: #94a3b8;
   bottom: 100px;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, $green 0%, #16a34a 100%);
+  background: linear-gradient(135deg, $color-success-alt 0%, #16a34a 100%);
   color: #052e16;
   border-radius: 50%;
   font-size: 32px;
@@ -347,7 +343,7 @@ $text-sub: #94a3b8;
 
 /* Pop drawer */
 :deep(.pop-drawer) {
-  background: linear-gradient(180deg, $bg 0%, darken($bg, 3%) 100%) !important;
+  background: linear-gradient(180deg, $bg-primary 0%, darken($bg-primary, 3%) 100%) !important;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding: 20px;
