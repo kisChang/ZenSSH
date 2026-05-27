@@ -170,12 +170,3 @@ export function initTheme() {
     const store = appConfigStore()
     applyTheme(store.theme || 'dark')
 }
-
-/**
- * 切换主题
- */
-export function toggleTheme() {
-    const store = appConfigStore()
-    const newTheme = store.theme === 'dark' ? 'light' : 'dark'
-    applyTheme(newTheme)
-}

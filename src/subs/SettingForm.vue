@@ -86,8 +86,8 @@
     </el-form-item>
     <el-form-item :label="$t('setting.theme')">
       <el-switch v-model="settingForm.theme" @change="handleThemeChange"
-                 active-action-icon="Sunny" active-value="dark" :active-text="$t('setting.themeDark')"
-                 inactive-action-icon="Moon" inactive-value="light" :inactive-text="$t('setting.themeLight')"/>
+                 active-action-icon="Sunny" :active-value="'dark'" :active-text="$t('setting.themeDark')"
+                 inactive-action-icon="Moon" :inactive-value="'light'" :inactive-text="$t('setting.themeLight')"/>
     </el-form-item>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
@@ -97,7 +97,7 @@
 </template>
 
 <script>
-import {appConfigStore, appRunState, useMngStore} from "@/store.js";
+import {appConfigStore, appRunState} from "@/store.js";
 import {isMobile} from "@/commons.js";
 import {relaunch} from "@tauri-apps/plugin-process"
 import {vibrate} from "@tauri-apps/plugin-haptics";
@@ -108,8 +108,7 @@ export default {
   data() {
     let set = appConfigStore();
     return {
-      setting: set,
-      settingForm: {},
+      settingForm: { ...set.$state },
       settingRules: {
         gistsAccessToken: [
           { required: true, message: '请输入授权码', trigger: 'blur' },
@@ -130,14 +129,13 @@ export default {
   },
   mounted() {
     this.isMobile = isMobile()
-    this.settingForm = Object.assign({}, this.setting.$state)
   },
   methods: {
     testVibrate(){
       vibrate(this.settingForm.virtualKeyboardVibrate).catch(() => {});
     },
-    handleThemeChange(theme) {
-      applyTheme(theme);
+    handleThemeChange() {
+      applyTheme(this.settingForm.theme);
     },
 
     handleSave(){
@@ -153,8 +151,7 @@ export default {
     save(func) {
       this.$refs.form.validate(valid => {
         if (valid) {
-          this.setting.saveSetting(this.settingForm)
-          this.settingForm = Object.assign({}, this.setting.$state)
+          appConfigStore().saveSetting(this.settingForm)
           this.$nextTick(() => {
             if (typeof func === "function") {
               func()
@@ -172,21 +169,21 @@ export default {
     },
     async syncConfig() {
       this.save()
-      if (this.setting.syncType === 0) {
+      if (appConfigStore().syncType === 0) {
         return;
       }
       this.syncConfigLoading = true
-      if (this.setting.gistsFileId || this.setting.webdavLastSync) {
+      if (appConfigStore().gistsFileId || appConfigStore().webdavLastSync) {
         // 先尝试加载云端配置
         try {
-          await this.setting.loadByCloud();
+          await appConfigStore().loadByCloud();
         }catch (error) {
           console.error(error);
         }
       }
-      this.setting.syncToCloud().then(() => {
+      appConfigStore().syncToCloud().then(() => {
         this.notify({message: this.$t('main.syncSuccess'), type: "success"})
-        this.settingForm = Object.assign({}, this.setting.$state)
+        this.settingForm = Object.assign({}, appConfigStore().$state)
       }).catch(err => {
         this.notify({message: err, type: "error"})
       }).finally(() => {

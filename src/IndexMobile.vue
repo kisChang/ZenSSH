@@ -280,7 +280,7 @@ export default {
   flex-direction: column;
 }
 :deep(.terminal-mobile) {
-  z-index: 1;
+  z-index: 99;
   position: fixed;
   top: env(safe-area-inset-top);
   bottom: env(safe-area-inset-bottom);

@@ -109,6 +109,7 @@ export const appConfigStore = defineStore('AppConf', {
             this.virtualKeyboardVibrate = setting.virtualKeyboardVibrate
             this.locale = setting.locale
             this.deletedIds = setting.deletedIds || []
+            this.theme = setting.theme
         },
         /**
          * 记录删除标记，用于多端同步删除
