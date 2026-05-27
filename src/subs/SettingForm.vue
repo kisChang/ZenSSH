@@ -85,10 +85,9 @@
       </el-select>
     </el-form-item>
     <el-form-item :label="$t('setting.theme')">
-      <el-select v-model="settingForm.theme" @change="handleThemeChange">
-        <el-option :label="$t('setting.themeDark')" value="dark"></el-option>
-        <el-option :label="$t('setting.themeLight')" value="light"></el-option>
-      </el-select>
+      <el-switch v-model="settingForm.theme" @change="handleThemeChange"
+                 active-action-icon="Sunny" active-value="dark" :active-text="$t('setting.themeDark')"
+                 inactive-action-icon="Moon" inactive-value="light" :inactive-text="$t('setting.themeLight')"/>
     </el-form-item>
 
     <div style="display: inline-block;min-width: 10rem;text-align: center;">
