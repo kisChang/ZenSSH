@@ -166,7 +166,10 @@ export default {
     },
     async closeTerminal(sessionId) {
       if (this.tabs.find(t => t.sessionId === sessionId)) {
-        this.$refs['xterm_' + sessionId][0].disconnect()
+        if (this.$refs['xterm_' + sessionId] && this.$refs['xterm_' + sessionId].length)
+          this.$refs['xterm_' + sessionId][0].disconnect()
+        if (this.$refs['sftp_' + sessionId] && this.$refs['sftp_' + sessionId].length)
+          this.$refs['sftp_' + sessionId][0].disconnect()
       }
     },
     showQuickConn() {
