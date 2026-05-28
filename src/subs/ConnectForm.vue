@@ -22,20 +22,31 @@
 
     <!-- 凭据选择 -->
     <el-form-item :label="$t('connect.credential')">
-      <el-select
-        v-model="config.credentialId"
-        :placeholder="$t('connect.credential_placeholder')"
-        clearable
-        style="width: 100%"
-        @change="handleCredentialChange"
-      >
-        <el-option
-          v-for="cred in credentialOptions"
-          :key="cred.value"
-          :value="cred.value"
-          :label="cred.label"
-        />
-      </el-select>
+      <div class="credential-select-wrapper">
+        <el-select
+          v-model="config.credentialId"
+          :placeholder="$t('connect.credential_placeholder')"
+          clearable
+          style="width: 100%"
+          @change="handleCredentialChange"
+        >
+          <el-option
+            v-for="cred in credentialOptions"
+            :key="cred.value"
+            :value="cred.value"
+            :label="cred.label"
+          />
+        </el-select>
+        <el-button
+          type="primary"
+          size="default"
+          class="create-cred-btn"
+          @click="openCreateCredentialDialog"
+        >
+          <el-icon><Plus /></el-icon>
+          <span class="btn-text">{{ $t('credential.createNew') }}</span>
+        </el-button>
+      </div>
     </el-form-item>
 
     <!-- 显示已选凭据的信息 -->
@@ -178,11 +189,29 @@
     </el-form-item>
     </template>
   </el-form>
+
+  <!-- 创建凭据对话框 -->
+  <el-dialog
+    v-model="credentialDialogVisible"
+    :title="$t('credential.createNew')"
+    width="90%"
+    :close-on-click-modal="false"
+    class="credential-dialog"
+  >
+    <CredentialForm ref="credFormRef" v-model="newCredential" />
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="credentialDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleCreateCredential">{{ $t('common.confirm') }}</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script>
 import {invoke} from "@tauri-apps/api/core";
 import {useMngStore} from "@/store.js";
+import CredentialForm from "./CredentialForm.vue";
 
 export const DEFAULT_PF = {
   localHost: "127.0.0.1",
@@ -220,6 +249,9 @@ export const DEFAULT_CONFIG = {
 
 export default {
   name: "ConnForm",
+  components: {
+    CredentialForm
+  },
   props: {
     isEdit: {
       type: Boolean,
@@ -232,6 +264,16 @@ export default {
       mngStore,
       bastionSessions: [],
       serialPorts: [],
+      credentialDialogVisible: false,
+      newCredential: {
+        name: '',
+        username: '',
+        authType: 'password',
+        password: '',
+        privateKeyPath: '',
+        privateKeyData: '',
+        keyPassword: '',
+      },
 
       configRules: {
         name: [
@@ -275,6 +317,37 @@ export default {
     this.mngStore.migrateOldConfigs();
   },
   methods: {
+    openCreateCredentialDialog() {
+      // 重置表单
+      this.newCredential = {
+        name: '',
+        username: this.config.username || '',
+        authType: 'password',
+        password: '',
+        privateKeyPath: '',
+        privateKeyData: '',
+        keyPassword: '',
+      };
+      this.credentialDialogVisible = true;
+    },
+    async handleCreateCredential() {
+      // 验证表单
+      try {
+        await this.$refs.credFormRef.validate();
+      } catch (e) {
+        return;
+      }
+
+      // 创建凭据
+      const newId = this.mngStore.addCredential(this.newCredential);
+
+      // 关闭对话框
+      this.credentialDialogVisible = false;
+
+      // 选中新创建的凭据
+      this.config.credentialId = newId;
+      this.handleCredentialChange(newId);
+    },
     addPortForward() {
       if (!this.config.portForwards) {
         this.config.portForwards = []
@@ -384,5 +457,56 @@ export default {
       height: 28px;
     }
   }
+}
+
+.credential-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+
+  .create-cred-btn {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+@media (min-width: 768px) {
+  .credential-select-wrapper {
+    flex-direction: row;
+    align-items: center;
+
+    .create-cred-btn {
+      align-self: auto;
+      margin-left: 10px;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .credential-select-wrapper {
+    .create-cred-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-text {
+      font-size: 14px;
+    }
+  }
+}
+
+.credential-dialog {
+  :deep(.el-dialog__body) {
+    padding: 20px;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
