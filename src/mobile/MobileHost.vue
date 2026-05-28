@@ -18,6 +18,13 @@
       </el-scrollbar>
     </div>
     <div v-else-if="configList.length" style="text-align: center;">
+      <div class="filter-bar">
+        <el-radio-group v-model="filterType" text-color="#fff" fill="#67C23A">
+          <el-radio-button value="all">All</el-radio-button>
+          <el-radio-button value="ssh">SSH</el-radio-button>
+          <el-radio-button value="serial">{{ $t('connect.typeSerial') }}</el-radio-button>
+        </el-radio-group>
+      </div>
       <el-scrollbar class="config-list">
         <draggable
           v-model="configListModel"
@@ -31,7 +38,7 @@
         >
           <template #item="{ element }">
             <div class="config-item">
-              <div class="drag-handle" @click.stop>
+              <div v-if="filterType === 'all'" class="drag-handle" @click.stop>
                 <el-icon><Rank /></el-icon>
               </div>
               <div class="item-content" @click.stop="handleClickConfig(element)">
@@ -96,17 +103,20 @@ export default {
       appMng: appMng,
       showConnect: false,
       configAdd: true,
+      filterType: 'all',
       config: defaultConfig,
       showDrawer: false,
     }
   },
   computed: {
     configList() {
-      return this.appMng.sortedConfigList
+      const list = this.appMng.sortedConfigList
+      if (this.filterType === 'all') return list
+      return list.filter(c => c.type === this.filterType)
     },
     configListModel: {
       get() {
-        return this.appMng.sortedConfigList
+        return this.configList
       },
       set(newList) {
         this.appMng.reorderConfig(newList.map(c => c.configId))
@@ -168,9 +178,18 @@ export default {
     width: 90%;
   }
 
+  .filter-bar {
+    padding-top: 5px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    :deep(.el-radio-group) {
+      justify-content: center;
+    }
+  }
+
   .config-list {
     padding: 12px 16px;
-    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 130px);
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 180px);
     user-select: none;
 
     .config-item {

@@ -1,8 +1,16 @@
 <template>
   <el-scrollbar class="menu" wrap-class="menu-scroll">
+    <div class="filter-bar">
+      <el-radio-group v-model="filterType" size="small">
+        <el-radio-button value="all">All</el-radio-button>
+        <el-radio-button value="ssh">SSH</el-radio-button>
+        <el-radio-button value="serial">{{ $t('connect.typeSerial') }}</el-radio-button>
+      </el-radio-group>
+    </div>
     <draggable
         v-if="configList.length > 0"
         v-model="configListModel"
+        :disabled="filterType !== 'all'"
         item-key="configId"
         animation="200"
         ghost-class="ghost"
@@ -89,6 +97,7 @@ export default {
       appMng: appMng,
       showConnect: false,
       configAdd: true,
+      filterType: 'all',
 
       triggerRef: {
         getBoundingClientRect: () => (DOMRect.fromRect()),
@@ -99,11 +108,13 @@ export default {
   },
   computed: {
     configList() {
-      return this.appMng.sortedConfigList
+      const list = this.appMng.sortedConfigList
+      if (this.filterType === 'all') return list
+      return list.filter(c => c.type === this.filterType)
     },
     configListModel: {
       get() {
-        return this.appMng.sortedConfigList
+        return this.configList
       },
       set(newList) {
         console.log('[ConnectManage] configListModel setter called:', newList.map(c => c.name))
@@ -182,6 +193,15 @@ export default {
 @media (max-width: 768px) {
   :deep(.el-dialog) {
     width: 90% !important;
+  }
+}
+
+.filter-bar {
+  padding: 5px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  :deep(.el-radio-group) {
+    justify-content: center;
   }
 }
 
