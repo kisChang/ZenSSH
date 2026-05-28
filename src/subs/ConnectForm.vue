@@ -75,7 +75,8 @@
       <template v-slot:label>
         <div>
           <div>{{ $t('connect.portForward') }}</div>
-          <el-button size="small" type="primary" circle @click="addPortForward">
+          <el-button v-if="config.portForwards && config.portForwards.length"
+                     size="small" type="primary" circle @click="addPortForward">
             <el-icon :size="15"><Plus /></el-icon>
           </el-button>
         </div>
@@ -103,7 +104,12 @@
         </el-row>
       </div>
       <div v-else style="margin: auto;">
-        No Port Forward Config.
+        <div>
+          No Port Forward Config.
+        </div>
+        <el-button type="primary" @click="addPortForward">
+          <el-icon :size="15"><Plus /></el-icon>Add
+        </el-button>
       </div>
     </el-form-item>
     </template>

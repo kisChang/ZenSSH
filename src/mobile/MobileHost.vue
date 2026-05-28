@@ -335,7 +335,7 @@ export default {
 .fab {
   position: absolute;
   right: 24px;
-  bottom: 100px;
+  bottom: 24px;
   width: 60px;
   height: 60px;
   background: var(--color-success);
