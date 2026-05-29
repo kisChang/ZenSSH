@@ -13,9 +13,6 @@
         :disabled="filterType !== 'all'"
         item-key="configId"
         animation="200"
-        ghost-class="ghost"
-        drag-class="drag"
-        chosen-class="chosen"
         :force-fallback="true">
       <template #item="{ element }">
         <div class="config-item" @dblclick.stop="configReConnect(element)" @contextmenu.stop="handleContextmenu($event, element)">
@@ -214,7 +211,6 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: grab;
-  transition: all 0.25s ease;
   &:hover {
     background: var(--bg-card);
     border-color: var(--border-color-active);
@@ -226,19 +222,6 @@ export default {
     .subtitle {
       color: var(--text-secondary);
     }
-  }
-  &.ghost {
-    opacity: 0.5;
-    background-color: var(--bg-card);
-  }
-  &.drag {
-    opacity: 0.9;
-    background-color: var(--bg-card);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  }
-  &.chosen {
-    opacity: 0.8;
-    background-color: var(--bg-card);
   }
   .title {
     font-size: 14px;

@@ -30,12 +30,8 @@
           v-model="configListModel"
           item-key="configId"
           animation="200"
-          ghost-class="ghost"
-          drag-class="drag"
-          chosen-class="chosen"
           :force-fallback="true"
-          handle=".drag-handle"
-        >
+          handle=".drag-handle">
           <template #item="{ element }">
             <div class="config-item">
               <div v-if="filterType === 'all'" class="drag-handle" @click.stop>
@@ -196,14 +192,11 @@ export default {
       display: flex;
       align-items: center;
       text-align: left;
-      padding: 16px;
-      margin-bottom: 12px;
+      padding: 8px 15px;
+      margin-bottom: 10px;
       background: var(--bg-card);
-      border-radius: 14px;
+      border-radius: 15px;
       border: 1px solid var(--border-color);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
 
       &::before {
         content: '';
@@ -224,25 +217,6 @@ export default {
         &::before {
           opacity: 1;
         }
-      }
-
-      &.ghost {
-        opacity: 0.4;
-        background: var(--bg-hover);
-        border: 1px dashed var(--border-color-active);
-        box-shadow: none;
-      }
-
-      &.drag {
-        opacity: 0.95;
-        background: var(--bg-active);
-        transform: rotate(2deg) scale(1.02);
-      }
-
-      &.chosen {
-        opacity: 0.9;
-        background: var(--bg-active);
-        border: 1px solid var(--color-success-alt);
       }
 
       .title {
