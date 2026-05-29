@@ -1,6 +1,6 @@
-package io.kischang.zenssh
+package io.github.kischang.zenssh
 
-// src-tauri/gen/android/app/src/main/java/io/kischang/zenssh/MainActivity.kt
+// src-tauri/gen/android/app/src/main/java/io/github/kischang/zenssh/MainActivity.kt
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 // 新增

@@ -16,10 +16,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "io.kischang.zenssh"
+    namespace = "io.github.kischang.zenssh"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "io.kischang.zenssh"
+        applicationId = "io.github.kischang.zenssh"
         minSdk = 28
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
