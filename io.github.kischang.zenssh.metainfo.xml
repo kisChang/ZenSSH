@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>io.github.kischang.zenssh</id>
+
+    <name>ZenSSH</name>
+
+    <summary>
+        SSH client built with Tauri
+    </summary>
+
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>MIT</project_license>
+
+    <description>
+        <p>
+            ZenSSH is a modern SSH client built with Tauri.
+        </p>
+    </description>
+
+    <launchable type="desktop-id">
+        io.github.kischang.zenssh.desktop
+    </launchable>
+
+    <developer_name>Kischang</developer_name>
+
+    <url type="homepage">
+        https://github.com/kischang/ZenSSH
+    </url>
+
+    <provides>
+        <binary>ZenSSH</binary>
+    </provides>
+
+    <categories>
+        <category>Network</category>
+        <category>Utility</category>
+    </categories>
+</component>

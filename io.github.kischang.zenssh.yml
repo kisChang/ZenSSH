@@ -1,36 +1,43 @@
-  app-id: io.github.kischang.zenssh
+app-id: io.github.kischang.zenssh
 
-  runtime: org.freedesktop.Platform
-  runtime-version: '25.08'
+runtime: org.kde.Platform
+runtime-version: '6.10'
+sdk: org.kde.Sdk
 
-  sdk: org.freedesktop.Sdk
+command: ZenSSH
 
-  sdk-extensions:
-    - org.freedesktop.Sdk.Extension.rust-stable
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=ipc
+  - --share=network
 
-  command: tauri-app
+modules:
+  - name: ZenSSH
+    buildsystem: simple
 
-  finish-args:
-    - --socket=wayland
-    - --socket=fallback-x11
-    - --device=dri
-    - --share=ipc
-    - --share=network
+    sources:
+      - type: file
+        path: ./src-tauri/target/release/bundle/deb/ZenSSH_0.3.2_amd64.deb
+      - type: file
+        path: ./io.github.kischang.zenssh.metainfo.xml
 
-  modules:
-    - name: ZenSSH
-      buildsystem: simple
+    build-commands:
+      - ar -x *.deb
+      - tar -xf data.tar.gz
+      - install -Dm755 usr/bin/ZenSSH /app/bin/ZenSSH
+      - install -Dm644 usr/share/applications/ZenSSH.desktop /app/share/applications/io.github.kischang.zenssh.desktop
+      - install -Dm644 usr/share/icons/hicolor/128x128/apps/ZenSSH.png \
+        /app/share/icons/hicolor/128x128/apps/io.github.kischang.zenssh.png
+      - install -Dm644 io.github.kischang.zenssh.metainfo.xml\
+        /app/share/metainfo/io.github.kischang.zenssh.metainfo.xml
 
-      sources:
-        - type: file
-          path: ./src-tauri/target/release/bundle/deb/ZenSSH_0.3.2_amd64.deb
-
-      build-commands:
-        - ar -x *.deb
-        - tar -xf data.tar.gz
-        - install -Dm755 usr/bin/ZenSSH /app/bin/ZenSSH
-        - install -Dm644 usr/share/applications/ZenSSH.desktop /app/share/applications/io.github.kischang.zenssh.desktop
-        - install -Dm644 usr/share/icons/hicolor/128x128/apps/ZenSSH.png \
-          /app/share/icons/hicolor/128x128/apps/io.github.kischang.zenssh.png
-        - install -Dm644 io.github.kischang.zenssh.metainfo.xml \
-          /app/share/metainfo/io.github.kischang.zenssh.metainfo.xml
+#  测试构建脚本
+#  flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest io.github.kischang.zenssh.yml
+#  原生构建，但是会失败
+#  flatpak run --command=flathub-build org.flatpak.Builder --install io.github.kischang.zenssh.yml
+#  内置构建会成功
+#  flatpak-builder --force-clean  --disable-rofiles-fuse   build-dir   io.github.kischang.zenssh.yml
+#  运行构建结果
+#  flatpak-builder --run build-dir io.github.kischang.zenssh.yml ZenSSH
