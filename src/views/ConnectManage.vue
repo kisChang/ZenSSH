@@ -22,7 +22,7 @@
               <UploadFilled/>
             </el-icon>
             <template v-if="element.type === 'serial'">
-              Serial: {{ element.portName }} @ {{ element.baudRate }}
+              {{ element.portName }} @ {{ element.baudRate }}
             </template>
             <template v-else>
               {{ element.username }}@{{ element.host }}
@@ -203,8 +203,8 @@ export default {
 }
 
 .config-item {
-  padding: 5px;
-  margin: 6px;
+  padding: 8px;
+  margin: 5px;
   border-radius: 8px;
   background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -224,21 +224,19 @@ export default {
     }
   }
   .title {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 1.1rem;
     color: var(--text-primary);
     line-height: 1.5;
-    margin-bottom: 4px;
     transition: color 0.2s ease;
   }
   .subtitle {
-    font-size: 12px;
+    font-size: 0.9rem;
+    line-height: 10px;
     color: var(--text-secondary);
     transition: color 0.2s ease;
     :deep(.el-icon svg) {
       width: 12px;
       height: 12px;
-      vertical-align: -2px;
     }
   }
 }

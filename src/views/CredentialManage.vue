@@ -166,7 +166,7 @@ export default {
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .credential-list {
@@ -182,7 +182,7 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 15px;
+    padding: 10px;
     border-bottom: 1px solid #444;
     cursor: pointer;
     transition: background 0.2s;
