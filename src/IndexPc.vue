@@ -65,7 +65,7 @@ import {openUrl} from '@tauri-apps/plugin-opener'
 import {exit, relaunch} from '@tauri-apps/plugin-process'
 import ConnectManage from "./views/ConnectManage.vue";
 import CredentialManage from "./views/CredentialManage.vue";
-import TerminalTabs from "./views/TerminalTabs.vue";
+import TerminalTabs from "./pc/TerminalTabs.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 

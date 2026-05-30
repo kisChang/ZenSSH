@@ -4,8 +4,8 @@
     <div class="toolbar">
       <div class="path">📂 {{ currentDir }}</div>
       <div class="actions">
-        <button v-show="isMobile" @click="bakHostTab">⬅ Hosts</button>
-        <button @click="goUp">🔼 parent dir</button>
+        <button v-show="isMobile" @click="bakHostTab">⬅ Close</button>
+        <button @click="goUp">🔼 parent</button>
         <button @click="mkdir">📁 mkdir</button>
         <button @click="touchFile">📄 mkfile</button>
         <button @click="upload">📤 upload</button>

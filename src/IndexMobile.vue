@@ -85,10 +85,8 @@
 
     <!-- 移动端终端页面 -->
     <transition name="terminal-anim">
-      <terminal-tabs v-show="activeTab === 'conn' && showTerminal"
-                     ref="terminalTabs"
-                     class="terminal-mobile"
-                     :active="showTerminal"/>
+      <mobile-terminal v-show="activeTab === 'conn' && showTerminal"
+                       ref="mobileTerminal"/>
     </transition>
 
     <footer class="tabbar">
@@ -118,7 +116,7 @@ import {
   requestBatteryOptimizationExemption,
 } from 'tauri-plugin-android-battery-optimization-api';
 import ConnectManage from "@/views/ConnectManage.vue";
-import TerminalTabs from "@/views/TerminalTabs.vue";
+import MobileTerminal from "@/mobile/MobileTerminal.vue";
 import MobileHost from "@/mobile/MobileHost.vue";
 import MobileCredential from "@/mobile/MobileCredential.vue";
 import MobileSetting from "@/mobile/MobileSetting.vue";
@@ -135,7 +133,7 @@ export default {
   props: {
     isLoading: false,
   },
-  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key, MobileSetting, MobileHost, MobileCredential, TerminalTabs, ConnectManage, ServerMonitor},
+  components: {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key, MobileSetting, MobileHost, MobileCredential, MobileTerminal, ConnectManage, ServerMonitor},
   data() {
     const tabsStore = useTabsStore();
     return {
@@ -147,6 +145,15 @@ export default {
       transitionName: 'slide-left',
       tabIndexMap: { 'host': 0, 'credential': 1, 'conn': 2, 'setting': 3 },
     }
+  },
+  watch: {
+    showTerminal(newVal) {
+      if (newVal && this.$refs.mobileTerminal && this.tabsStore.connList.length > 0) {
+        // 激活时设置当前连接为列表中最后一个
+        const lastConn = this.tabsStore.connList[this.tabsStore.connList.length - 1]
+        this.$refs.mobileTerminal.setActiveConn(lastConn.id)
+      }
+    },
   },
   mounted() {
     this.toggleTab('host')
@@ -198,7 +205,7 @@ export default {
       } else if (this.activeTab === 'conn'){
         if (this.showTerminal) {
           // 从终端页面返回，先回到连接列表
-          this.$refs.terminalTabs.onBackButtonPress().then(rv => {
+          this.$refs.mobileTerminal.onBackButtonPress().then(rv => {
             if (rv) {
               this.showTerminal = false
             }
@@ -253,10 +260,10 @@ export default {
         return
       }
       this.showTerminal = true
-      // 激活对应Tab
+      // 设置当前激活的连接
       this.$nextTick(() => {
-        if (this.$refs.terminalTabs) {
-          this.$refs.terminalTabs.activeTab = item.id
+        if (this.$refs.mobileTerminal) {
+          this.$refs.mobileTerminal.setActiveConn(item.id)
         }
       })
     },
@@ -278,14 +285,6 @@ export default {
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
-}
-:deep(.terminal-mobile) {
-  z-index: 99;
-  position: fixed;
-  top: env(safe-area-inset-top);
-  bottom: env(safe-area-inset-bottom);
-  left: 0;
-  right: 0;
 }
 
 .terminal-anim-enter-active,
