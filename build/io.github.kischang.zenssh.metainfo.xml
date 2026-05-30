@@ -5,7 +5,7 @@
     <name>ZenSSH</name>
 
     <summary>
-        SSH client built with Tauri
+        SSH/Sftp/Serial terminal
     </summary>
 
     <metadata_license>CC0-1.0</metadata_license>
@@ -21,7 +21,7 @@
         io.github.kischang.zenssh.desktop
     </launchable>
 
-    <developer_name>Kischang</developer_name>
+    <developer_name>kischang</developer_name>
 
     <url type="homepage">
         https://github.com/kischang/ZenSSH

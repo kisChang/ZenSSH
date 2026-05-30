@@ -217,7 +217,7 @@ export default {
     overflow: hidden;
   }
   :deep(.terminal-container) {
-    height: calc(100vh - 100px);
+    height: calc(100vh - 110px);
   }
   &.no_bar {
     :deep(.terminal-container) {
