@@ -465,7 +465,7 @@ impl client::Handler for SshClient {
         }
 
         // 等待用户响应（带超时）
-        match tokio::time::timeout(Duration::from_secs(60), rx).await {
+        let result = match tokio::time::timeout(Duration::from_secs(60), rx).await {
             Ok(Ok(accepted)) => {
                 if accepted {
                     info!("Host key accepted for session {}", self.session_id);
@@ -484,7 +484,15 @@ impl client::Handler for SshClient {
                 error!("Host key verification timed out for session {}", self.session_id);
                 Err(russh::Error::Kex)
             }
+        };
+
+        // 清理：无论成功、拒绝还是超时，都移除通道避免内存泄漏
+        {
+            let mut map = HOST_KEY_CHANNEL.lock().unwrap();
+            map.remove(&fingerprint);
         }
+
+        result
     }
 }
 
