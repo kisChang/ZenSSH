@@ -234,6 +234,8 @@ export default {
     line-height: 10px;
     color: var(--text-secondary);
     transition: color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
     :deep(.el-icon svg) {
       width: 12px;
       height: 12px;
