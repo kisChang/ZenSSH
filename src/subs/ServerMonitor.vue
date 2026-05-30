@@ -92,7 +92,7 @@ export default {
 .stats-row {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -101,9 +101,9 @@ export default {
   align-items: center;
   gap: 5px;
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 11px;
+  font-size: 0.7rem;
   white-space: nowrap;
-  padding: 2px 8px;
+  padding: 2px 3px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
 

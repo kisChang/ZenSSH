@@ -35,11 +35,11 @@ export default {
     setActiveConn(id) {
       this.currentConnId = id
     },
-    onBackButtonPress() {
+    async onBackButtonPress() {
       if (this.currentConn?.type === 'sftp' && this.$refs['sftp_' + this.currentConn.sessionId]) {
-        return this.$refs['sftp_' + this.currentConn.sessionId][0].onBackButtonPress()
+        return this.$refs['sftp_' + this.currentConn.sessionId].onBackButtonPress()
       }
-      return Promise.resolve(true)
+      return true
     }
   }
 }
@@ -57,5 +57,12 @@ export default {
   width: 100%;
   height: 100%;
   background: var(--bg-primary);
+
+  :deep(.terminal-container) {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  :deep(.file-list) {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px);
+  }
 }
 </style>

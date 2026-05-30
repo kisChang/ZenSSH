@@ -54,7 +54,7 @@
         </draggable>
       </el-scrollbar>
     </div>
-    <div v-else style="text-align: center;">
+    <div v-else style="padding-top: 50px; text-align: center;">
       <img class="app-icon" src="/logo.png" />
 
       <h2>{{ $t('main.quickConnect') }}</h2>
@@ -175,16 +175,15 @@ export default {
   }
 
   .filter-bar {
-    padding-top: 5px;
+    padding: 5px 5px 8px;
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
     :deep(.el-radio-group) {
       justify-content: center;
     }
   }
 
   .config-list {
-    padding: 12px 16px;
+    padding: 0 16px 10px;
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 180px);
     user-select: none;
 
