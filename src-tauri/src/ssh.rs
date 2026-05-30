@@ -7,20 +7,24 @@ use russh::*;
 use russh_sftp::client::SftpSession;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 use crate::monitor;
 
 /// 链接会话管理（key: session_id）
-static SSH_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SshSession>>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static SSH_MAP: Lazy<Arc<StdMutex<HashMap<String, Arc<SshSession>>>>> =
+    Lazy::new(|| Arc::new(StdMutex::new(HashMap::new())));
 /// 链接Sftp会话（key: session_id）
-static SFTP_MAP: Lazy<Arc<Mutex<HashMap<String, Arc<SftpSession>>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static SFTP_MAP: Lazy<Arc<StdMutex<HashMap<String, Arc<SftpSession>>>>> =
+    Lazy::new(|| Arc::new(StdMutex::new(HashMap::new())));
 /// 配置管理（key: config_id）
-static CONFIG_MAP: Lazy<Arc<Mutex<HashMap<String, SshConfig>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static CONFIG_MAP: Lazy<Arc<StdMutex<HashMap<String, SshConfig>>>> =
+    Lazy::new(|| Arc::new(StdMutex::new(HashMap::new())));
+/// 存储主机键验证的响应通道（key: fingerprint）
+static HOST_KEY_CHANNEL: Lazy<Arc<StdMutex<HashMap<String, tokio::sync::oneshot::Sender<bool>>>>> =
+    Lazy::new(|| Arc::new(StdMutex::new(HashMap::new())));
 
 /// SSH/串口 连接配置
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -392,7 +396,7 @@ pub async fn ssh_list_port_forwards(session_id: &str) -> Result<Vec<u32>, String
         map.get(session_id).cloned()
     };
     match sess {
-        Some(sess) => Ok(sess.list_port_forwards()),
+        Some(sess) => Ok(sess.list_port_forwards().await),
         None => Err("Session not found".to_string()),
     }
 }
@@ -426,10 +430,6 @@ pub struct SshClient {
     app: AppHandle,
     session_id: String,
 }
-
-/// 存储主机键验证的响应通道（key: fingerprint）
-static HOST_KEY_CHANNEL: Lazy<Arc<Mutex<HashMap<String, tokio::sync::oneshot::Sender<bool>>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 impl client::Handler for SshClient {
     type Error = russh::Error;
@@ -512,7 +512,7 @@ pub struct SshSession {
     handle: Arc<client::Handle<SshClient>>,
     write: Mutex<Option<russh::ChannelWriteHalf<Msg>>>,
     /// 活跃的端口转发（key: channel_id）
-    port_forwards: Arc<Mutex<HashMap<u32, PortForwardEntry>>>,
+    port_forwards: Arc<tokio::sync::Mutex<HashMap<u32, PortForwardEntry>>>,
     /// 端口转发ID计数器
     port_forward_id_counter: std::sync::atomic::AtomicU32,
 
@@ -622,7 +622,7 @@ impl SshSession {
             config_id,
             handle: Arc::new(handle),
             write: Mutex::new(Some(write)),
-            port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            port_forwards: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             port_forward_id_counter: std::sync::atomic::AtomicU32::new(1),
             shutdown_rx,
             shutdown_tx,
@@ -740,7 +740,7 @@ impl SshSession {
             config_id,
             handle: handle.into(),
             write: Mutex::new(Some(write)),
-            port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            port_forwards: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             port_forward_id_counter: std::sync::atomic::AtomicU32::new(1),
             shutdown_rx,
             shutdown_tx,
@@ -1044,7 +1044,7 @@ impl SshSession {
 
         // 存储端口转发信息
         {
-            let mut forwards = self.port_forwards.lock().unwrap();
+            let mut forwards = self.port_forwards.lock().await;
             forwards.insert(channel_id, PortForwardEntry {
                 close_tx,
                 local_host: config.local_host.clone(),
@@ -1137,7 +1137,7 @@ impl SshSession {
                 }
             }
             // 监听器退出时，从 port_forwards 中移除
-            let mut forwards = port_forwards.lock().unwrap();
+            let mut forwards = port_forwards.lock().await;
             forwards.remove(&channel_id);
             info!("Listener exited, port forward {} removed", channel_id);
         });
@@ -1152,7 +1152,7 @@ impl SshSession {
     /// 关闭端口转发
     pub async fn close_port_forward(&self, channel_id: u32) -> Result<()> {
         let entry = {
-            let mut forwards = self.port_forwards.lock().unwrap();
+            let mut forwards = self.port_forwards.lock().await;
             forwards.remove(&channel_id)
         };
         if let Some(entry) = entry {
@@ -1164,23 +1164,15 @@ impl SshSession {
     }
 
     /// 获取所有活跃的端口转发
-    pub fn list_port_forwards(&self) -> Vec<u32> {
-        let forwards = self.port_forwards.lock().unwrap();
+    pub async fn list_port_forwards(&self) -> Vec<u32> {
+        let forwards = self.port_forwards.lock().await;
         forwards.keys().cloned().collect()
     }
 
     pub async fn send(&self, cmd: &str) -> Result<()> {
-        let mut write = {
-            let mut guard = self.write.lock().unwrap();
-            guard.take()
-        };
-
-        if let Some(ref mut write) = write {
+        let mut guard = self.write.lock().await;
+        if let Some(ref mut write) = *guard {
             write.data(cmd.as_bytes()).await?;
-        }
-        {
-            let mut guard = self.write.lock().unwrap();
-            *guard = write;
         }
         Ok(())
     }
@@ -1192,30 +1184,24 @@ impl SshSession {
         pix_width: u32,
         pix_height: u32,
     ) -> Result<()> {
-        let mut write = {
-            let mut guard = self.write.lock().unwrap();
-            guard.take()
-        };
-        if let Some(ref mut write) = write {
+        let mut guard = self.write.lock().await;
+        if let Some(ref mut write) = *guard {
             write
                 .window_change(col_width, row_height, pix_width, pix_height)
                 .await?;
-        }
-        {
-            let mut guard = self.write.lock().unwrap();
-            *guard = write;
         }
         Ok(())
     }
 
     pub async fn close(&self) -> Result<()> {
+        // 先发送关闭信号，阻止新的操作
         let _ = self.shutdown_tx.send(true);
         // 关闭监控通道
         if let Some(ref tx) = self.monitor_shutdown_tx {
             let _ = tx.send(true);
         }
         let channel = {
-            let mut guard = self.write.lock().unwrap();
+            let mut guard = self.write.lock().await;
             guard.take()
         };
         if let Some(channel) = channel {
