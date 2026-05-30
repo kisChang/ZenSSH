@@ -511,13 +511,25 @@ pub struct SshSession {
     pub config_id: String,
     handle: Arc<client::Handle<SshClient>>,
     write: Mutex<Option<russh::ChannelWriteHalf<Msg>>>,
-    /// 活跃的端口转发通道
-    port_forwards: Arc<Mutex<HashMap<u32, russh::Channel<Msg>>>>,
+    /// 活跃的端口转发（key: channel_id）
+    port_forwards: Arc<Mutex<HashMap<u32, PortForwardEntry>>>,
+    /// 端口转发ID计数器
+    port_forward_id_counter: std::sync::atomic::AtomicU32,
 
     shutdown_rx: tokio::sync::watch::Receiver<bool>,
     shutdown_tx: tokio::sync::watch::Sender<bool>,
     /// 监控通道关闭信号
     monitor_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
+}
+
+/// 端口转发条目
+struct PortForwardEntry {
+    /// 关闭信号发送者，用于停止监听器
+    close_tx: tokio::sync::watch::Sender<bool>,
+    /// 本地监听地址
+    local_host: String,
+    /// 本地监听端口
+    local_port: u32,
 }
 
 impl SshSession {
@@ -611,6 +623,7 @@ impl SshSession {
             handle: Arc::new(handle),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            port_forward_id_counter: std::sync::atomic::AtomicU32::new(1),
             shutdown_rx,
             shutdown_tx,
             monitor_shutdown_tx: Some(monitor_tx),
@@ -728,6 +741,7 @@ impl SshSession {
             handle: handle.into(),
             write: Mutex::new(Some(write)),
             port_forwards: Arc::new(Mutex::new(HashMap::new())),
+            port_forward_id_counter: std::sync::atomic::AtomicU32::new(1),
             shutdown_rx,
             shutdown_tx,
             monitor_shutdown_tx: Some(monitor_tx),
@@ -1022,6 +1036,22 @@ impl SshSession {
         let local_addr = format!("{}:{}", config.local_host, config.local_port);
         let listener = tokio::net::TcpListener::bind(&local_addr).await?;
 
+        // 生成唯一的 channel_id
+        let channel_id = self.port_forward_id_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        // 创建关闭信号通道
+        let (close_tx, mut close_rx) = tokio::sync::watch::channel(false);
+
+        // 存储端口转发信息
+        {
+            let mut forwards = self.port_forwards.lock().unwrap();
+            forwards.insert(channel_id, PortForwardEntry {
+                close_tx,
+                local_host: config.local_host.clone(),
+                local_port: config.local_port,
+            });
+        }
+
         let handle = self.handle.clone();
         let result_local_host = config.local_host.clone();
         let result_local_port = config.local_port;
@@ -1031,12 +1061,19 @@ impl SshSession {
             && config.remote_port == 0;
 
         let mut shutdown_rx = self.shutdown_rx.clone();
+        let port_forwards = self.port_forwards.clone();
         tokio::spawn(async move {
             loop {
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         if *shutdown_rx.borrow() {
                             info!("Stopping listener due to SSH disconnect");
+                            break;
+                        }
+                    }
+                    _ = close_rx.changed() => {
+                        if *close_rx.borrow() {
+                            info!("Stopping listener due to user request");
                             break;
                         }
                     }
@@ -1099,11 +1136,14 @@ impl SshSession {
                     }
                 }
             }
-            info!("Listener exited");
+            // 监听器退出时，从 port_forwards 中移除
+            let mut forwards = port_forwards.lock().unwrap();
+            forwards.remove(&channel_id);
+            info!("Listener exited, port forward {} removed", channel_id);
         });
 
         Ok(PortForwardResult {
-            channel_id: 0,
+            channel_id,
             local_host: result_local_host,
             local_port: result_local_port,
         })
@@ -1111,12 +1151,14 @@ impl SshSession {
 
     /// 关闭端口转发
     pub async fn close_port_forward(&self, channel_id: u32) -> Result<()> {
-        let channel = {
+        let entry = {
             let mut forwards = self.port_forwards.lock().unwrap();
             forwards.remove(&channel_id)
         };
-        if let Some(channel) = channel {
-            channel.close().await?;
+        if let Some(entry) = entry {
+            // 发送关闭信号，监听器会停止并从 map 中移除自身
+            let _ = entry.close_tx.send(true);
+            info!("Port forward {} close signal sent", channel_id);
         }
         Ok(())
     }
