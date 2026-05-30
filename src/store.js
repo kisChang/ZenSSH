@@ -304,13 +304,13 @@ export const appConfigStore = defineStore('AppConf', {
             const mergedVersion = Math.max(cloudVersion, localVersion);
             console.log(`[Sync] Version conflict resolved: cloud=${cloudVersion}, local=${localVersion}, merged=${mergedVersion}`);
 
-            // 合并主机配置列表
-            let mergedList = mergeList(cloudContent.configList || [], localContent.configList || [], 'configId')
+            // 合并主机配置列表 - 云端优先，本地存在时用云端覆盖
+            let mergedList = mergeList(localContent.configList || [], cloudContent.configList || [], 'configId')
 
-            // 合并凭据列表
+            // 合并凭据列表 - 云端优先，本地存在时用云端覆盖
             let mergedCredentialList = mergeList(
-                cloudContent.credentialList || [],
                 localContent.credentialList || [],
+                cloudContent.credentialList || [],
                 'credentialId'
             );
 
