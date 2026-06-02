@@ -9,11 +9,38 @@ import {webdavGet, webdavPut} from "@/utils/webdav.js";
 // session 前缀 s_
 /////// genId
 
+// 智能合并列表，比较 lastUpdate 时间，保留较新的版本
+// list1: 本地列表, list2: 云端列表, keyName: 唯一键名
 function mergeList(list1 = [], list2 = [], keyName) {
     const map = new Map();
+    // 先将所有项放入 map
     [...list1, ...list2].forEach(item => {
         map.set(item[keyName], item);
     });
+
+    // 对于存在冲突的项（两个列表都有），比较 lastUpdate，保留较新的
+    const list1Keys = new Set(list1.map(item => item[keyName]));
+    const conflictItems = list2.filter(item => list1Keys.has(item[keyName]));
+
+    for (const cloudItem of conflictItems) {
+        const localItem = list1.find(item => item[keyName] === cloudItem[keyName]);
+        if (localItem && cloudItem.lastUpdate && localItem.lastUpdate) {
+            // 双方都有 lastUpdate，比较时间，保留较新的
+            if (cloudItem.lastUpdate > localItem.lastUpdate) {
+                map.set(cloudItem[keyName], cloudItem);
+            } else {
+                map.set(cloudItem[keyName], localItem);
+            }
+        } else if (cloudItem.lastUpdate && !localItem.lastUpdate) {
+            // 云端有时间戳，本地没有，优先用云端
+            map.set(cloudItem[keyName], cloudItem);
+        } else if (!cloudItem.lastUpdate && localItem.lastUpdate) {
+            // 本地有时间戳，云端没有，优先用本地
+            map.set(cloudItem[keyName], localItem);
+        }
+        // 如果都没有 lastUpdate，保持现有逻辑（后面覆盖前面，即用云端）
+    }
+
     return Array.from(map.values());
 }
 
@@ -384,6 +411,10 @@ export const DEFAULT_CREDENTIAL = {
 
 // 填充默认值
 export function normalizeConfig(config) {
+    // 确保 lastUpdate 字段存在（用于多端同步时比较版本）
+    if (!config.lastUpdate) {
+        config.lastUpdate = Date.now();
+    }
     if (!config.type) config.type = 'ssh';
     if (config.type === 'ssh') {
         if (config.port === undefined) config.port = 22;
@@ -506,6 +537,10 @@ export const useMngStore = defineStore('UserConf', {
             if (!credential.name) {
                 credential.name = '凭据_' + credential.credentialId.slice(-6);
             }
+            // 确保 lastUpdate 字段存在（用于多端同步时比较版本）
+            if (!credential.lastUpdate) {
+                credential.lastUpdate = Date.now();
+            }
             this.credentialList.push(credential);
             this.syncConfig().then();
             return credential.credentialId;
@@ -520,6 +555,8 @@ export const useMngStore = defineStore('UserConf', {
                     credential.password = credential.passwordNew;
                 }
                 delete credential.passwordNew;
+                // 更新 lastUpdate 时间戳（用于多端同步时比较版本）
+                credential.lastUpdate = Date.now();
                 Object.assign(find, credential);
                 this.syncConfig().then();
             }
