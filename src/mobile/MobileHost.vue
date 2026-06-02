@@ -191,7 +191,7 @@ export default {
       display: flex;
       align-items: center;
       text-align: left;
-      padding: 8px 15px;
+      padding: 10px 15px;
       margin-bottom: 10px;
       background: var(--bg-card);
       border-radius: 15px;
@@ -220,14 +220,13 @@ export default {
 
       .title {
         font-size: 1.1rem;
-        font-weight: 600;
+        line-height: 1;
         color: var(--text-primary);
-        margin-bottom: 6px;
-        letter-spacing: 0.3px;
+        margin-bottom: 5px;
       }
 
       .subtitle {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: var(--text-secondary);
         display: flex;
         align-items: center;
@@ -264,27 +263,6 @@ export default {
       .item-content {
         flex: 1;
         min-width: 0;
-        padding: 4px 0;
-
-        .title {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 6px;
-          letter-spacing: 0.3px;
-        }
-
-        .subtitle {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-
-          .el-icon {
-            flex-shrink: 0;
-          }
-        }
       }
     }
   }

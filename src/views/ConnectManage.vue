@@ -224,9 +224,10 @@ export default {
     }
   }
   .title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.1;
+    margin-bottom: 2px;
     transition: color 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
