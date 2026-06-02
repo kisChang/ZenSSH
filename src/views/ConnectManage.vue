@@ -228,6 +228,9 @@ export default {
     color: var(--text-primary);
     line-height: 1.5;
     transition: color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .subtitle {
     font-size: 0.9rem;
@@ -236,6 +239,7 @@ export default {
     transition: color 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
     :deep(.el-icon svg) {
       width: 12px;
       height: 12px;
