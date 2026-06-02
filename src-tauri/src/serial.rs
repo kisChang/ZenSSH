@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::LazyLock;
-use std::time::Duration;
+use tokio::time::{timeout, Duration};
 use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
@@ -200,33 +200,40 @@ impl SerialSession {
                     break;
                 }
 
-                let read_result = {
-                    let mut port_guard = read.lock().await;
-                    match port_guard.as_mut() {
-                        Some(serial_port) => serial_port.read(&mut buffer).await,
-                        None => {
-                            break;
+                // 使用1秒超时读取，如果超时则进入下一次循环检查close标志
+                let read_result: Result<Result<usize, std::io::Error>, tokio::time::error::Elapsed> = timeout(
+                    Duration::from_secs(1),
+                    async {
+                        let mut port_guard = read.lock().await;
+                        if let Some(port) = port_guard.as_mut() {
+                            port.read(&mut buffer).await
+                        } else {
+                            Err(std::io::Error::new(std::io::ErrorKind::NotConnected, "port not available"))
                         }
                     }
-                };
+                ).await;
 
                 match read_result {
-                    Ok(0) => {
+                    Ok(Ok(0)) => {
                         // EOF — 串口断开
                         info!("Serial EOF detected: {}", session_id);
                         break;
                     }
-                    Ok(n) => {
+                    Ok(Ok(n)) => {
                         let _ = on_event.send(SerialChannelEvent::Data {
                             data: buffer[..n].to_vec(),
                         });
                     }
-                    Err(e) => {
+                    Ok(Err(e)) => {
                         warn!("Serial read error on {}: {}", session_id, e);
                         let _ = on_event.send(SerialChannelEvent::Error {
                             message: e.to_string(),
                         });
                         break;
+                    }
+                    Err(_) => {
+                        // 超时，进入下一次循环检查close标志
+                        continue;
                     }
                 }
             }
@@ -259,26 +266,29 @@ impl SerialSession {
     pub async fn close(&self) -> Result<()> {
         info!("Closing serial session: {}", self.session_id);
 
-        // 设置关闭标志
+        // 1. 设置关闭标志，通知 read loop 退出
         self.closed.store(true, Ordering::Relaxed);
 
-        // 释放读取端（读取任务会看到 None 并退出）
-        {
-            let mut read_guard = self.read.lock().await;
-            *read_guard = None;
-        }
-
-        // 释放写入端
-        {
-            let mut write_guard = self.write.lock().await;
+        // 2. 尝试非阻塞释放写入端
+        if let Ok(mut write_guard) = self.write.try_lock() {
             *write_guard = None;
+            info!("{} set write clean", self.session_id);
+        } else {
+            warn!("{} write lock held", self.session_id);
         }
 
-        // 等待读取任务结束
+        // 3. 尝试非阻塞释放读取端（如果被持有则跳过，read loop 下次循环会检测到 closed 标志并退出）
+        if let Ok(mut read_guard) = self.read.try_lock() {
+            *read_guard = None;
+            info!("{} set read clean", self.session_id);
+        } else {
+            warn!("{} read lock held by read loop, will exit on next iteration", self.session_id);
+        }
+
+        // 4. 等待读取任务结束
         if let Some(handle) = self.read_handle.lock().await.take() {
             let _ = handle.await;
         }
-
         info!("Serial session closed: {}", self.session_id);
         Ok(())
     }
