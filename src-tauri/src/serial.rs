@@ -131,7 +131,7 @@ pub struct SerialSession {
     /// 串口写入端
     write: Arc<Mutex<Option<tokio::io::WriteHalf<SerialStream>>>>,
     /// 关闭标志
-    closed: AtomicBool,
+    closed: Arc<AtomicBool>,
     /// 后台读取任务句柄
     read_handle: Mutex<Option<tokio::task::JoinHandle<()>>>,
 }
@@ -150,6 +150,7 @@ impl SerialSession {
         );
 
         let builder = build_serial_builder(&config)?;
+        #[allow(unused_mut)]
         let mut port = builder.open_native_async()?;
         #[cfg(unix)]
         port.set_exclusive(false)
@@ -161,12 +162,13 @@ impl SerialSession {
         let (read, write) = tokio::io::split(port);
         let read_mutex = Arc::new(Mutex::new(Some(read)));
         let write_mutex = Arc::new(Mutex::new(Some(write)));
-        let closed = AtomicBool::new(false);
+        let closed = Arc::new(AtomicBool::new(false));
 
         // 启动后台异步读取循环
         let read_handle = Self::spawn_read_loop(
             app,
             read_mutex.clone(),
+            closed.clone(),
             session_id.clone(),
             on_event,
         );
@@ -184,6 +186,7 @@ impl SerialSession {
     fn spawn_read_loop(
         app: AppHandle,
         read: Arc<Mutex<Option<tokio::io::ReadHalf<SerialStream>>>>,
+        closed: Arc<AtomicBool>,
         session_id: String,
         on_event: tauri::ipc::Channel<SerialChannelEvent>,
     ) -> tokio::task::JoinHandle<()> {
@@ -191,6 +194,12 @@ impl SerialSession {
             let mut buffer = [0u8; 4096];
 
             loop {
+                // 检查关闭标志
+                if closed.load(Ordering::Relaxed) {
+                    info!("Serial close requested: {}", session_id);
+                    break;
+                }
+
                 let read_result = {
                     let mut port_guard = read.lock().await;
                     match port_guard.as_mut() {

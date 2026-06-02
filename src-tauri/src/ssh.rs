@@ -531,6 +531,7 @@ pub struct SshSession {
 }
 
 /// 端口转发条目
+#[allow(dead_code)]
 struct PortForwardEntry {
     /// 关闭信号发送者，用于停止监听器
     close_tx: tokio::sync::watch::Sender<bool>,
