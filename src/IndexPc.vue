@@ -26,11 +26,11 @@
           v-model="showUpdater"
           title="检查到更新"
           width="500">
-        <div>
-          <div>当前版本：{{update.currentVersion}}</div>
-          <div>最新版本：{{update.version}}</div>
-          <div>发布时间：{{update.date}}</div>
-          <div>更新内容：{{update.body || "暂无说明"}}</div>
+        <div v-if="_update">
+          <div>当前版本：{{_update.currentVersion}}</div>
+          <div>最新版本：{{_update.version}}</div>
+          <div>发布时间：{{_update.date}}</div>
+          <div>更新内容：{{_update.body || "暂无说明"}}</div>
         </div>
         <template #footer>
           <div class="dialog-footer">
@@ -60,9 +60,10 @@
 </template>
 
 <script>
+import { markRaw } from 'vue';
 import {check} from '@tauri-apps/plugin-updater';
-import {openUrl} from '@tauri-apps/plugin-opener'
-import {exit, relaunch} from '@tauri-apps/plugin-process'
+import {openUrl} from '@tauri-apps/plugin-opener';
+import {exit, relaunch} from '@tauri-apps/plugin-process';
 import ConnectManage from "./views/ConnectManage.vue";
 import CredentialManage from "./views/CredentialManage.vue";
 import TerminalTabs from "./pc/TerminalTabs.vue";
@@ -85,7 +86,6 @@ export default {
       asideSize: 200,
       activeMenu: "",
       showUpdater: false,
-      update: null,
       activeSessionId: null,
       activeSessionType: 'welcome',
       panelMode: 'host', // 'host' | 'credential'
@@ -102,7 +102,7 @@ export default {
     handleCheckUpdate(byUser) {
       check().then(update => {
         if (update) {
-          this.update = update;
+          this._update = markRaw(update);
           this.showUpdater = true
         } else {
           if (byUser) {
@@ -113,11 +113,11 @@ export default {
         this.notify({type: 'primary', message: '暂无更新，因为开发者弄坏了更新服务器:' + err});
       })
     },
-    async handleAppUpdate() {
+    handleAppUpdate() {
       let downloaded = 0;
       let contentLength = 0;
       // alternatively we could also call update.download() and update.install() separately
-      await this.update.downloadAndInstall((event) => {
+      this._update.downloadAndInstall((event) => {
         switch (event.event) {
           case 'Started':
             contentLength = event.data.contentLength;
@@ -131,9 +131,10 @@ export default {
             console.log('download finished');
             break;
         }
-      });
-      console.log('update installed');
-      await relaunch();
+      }).then(() => {
+        console.log('update installed');
+        relaunch().then();
+      })
     },
     handleMenuSelect(index) {
       this.activeMenu = index
