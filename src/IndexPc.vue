@@ -26,7 +26,14 @@
           v-model="showUpdater"
           title="检查到更新"
           width="500">
-        <div v-if="_update">
+        <!-- 下载中显示进度条 -->
+        <div v-if="isDownloading">
+          <div>正在下载更新...</div>
+          <el-progress :percentage="downloadProgress" :status="downloadProgress === 100 ? 'success' : ''" />
+          <div class="download-info">{{ downloadedSize }} / {{ totalSize }}</div>
+        </div>
+        <!-- 未下载时显示更新信息 -->
+        <div v-else-if="_update">
           <div>当前版本：{{_update.currentVersion}}</div>
           <div>最新版本：{{_update.version}}</div>
           <div>发布时间：{{_update.date}}</div>
@@ -34,9 +41,9 @@
         </div>
         <template #footer>
           <div class="dialog-footer">
-            <el-button @click="showUpdater = false">Cancel</el-button>
-            <el-button type="primary" @click="handleAppUpdate">
-              立即更新
+            <el-button @click="showUpdater = false" :disabled="isDownloading">Cancel</el-button>
+            <el-button type="primary" @click="handleAppUpdate" :loading="isDownloading" :disabled="isDownloading">
+              {{ isDownloading ? '下载中...' : '立即更新' }}
             </el-button>
           </div>
         </template>
@@ -89,6 +96,10 @@ export default {
       activeSessionId: null,
       activeSessionType: 'welcome',
       panelMode: 'host', // 'host' | 'credential'
+      isDownloading: false,
+      downloadProgress: 0,
+      downloadedSize: '0 B',
+      totalSize: '0 B',
     }
   },
   mounted() {
@@ -114,6 +125,8 @@ export default {
       })
     },
     handleAppUpdate() {
+      this.isDownloading = true;
+      this.downloadProgress = 0;
       let downloaded = 0;
       let contentLength = 0;
       // alternatively we could also call update.download() and update.install() separately
@@ -121,10 +134,13 @@ export default {
         switch (event.event) {
           case 'Started':
             contentLength = event.data.contentLength;
+            this.totalSize = this.formatSize(event.data.contentLength);
             console.log(`started downloading ${event.data.contentLength} bytes`);
             break;
           case 'Progress':
             downloaded += event.data.chunkLength;
+            this.downloadProgress = Math.round((downloaded / contentLength) * 100);
+            this.downloadedSize = this.formatSize(downloaded);
             console.log(`downloaded ${downloaded} from ${contentLength}`);
             break;
           case 'Finished':
@@ -133,8 +149,22 @@ export default {
         }
       }).then(() => {
         console.log('update installed');
-        relaunch().then();
+        this.downloadProgress = 100;
+        this.downloadedSize = this.totalSize;
+        setTimeout(() => {
+          relaunch().then();
+        }, 500);
+      }).catch((err) => {
+        this.isDownloading = false;
+        this.notify({type: 'error', message: '更新下载失败: ' + err});
       })
+    },
+    formatSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
     handleMenuSelect(index) {
       this.activeMenu = index
@@ -242,6 +272,13 @@ export default {
 .status-bar-empty {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.download-info {
+  text-align: center;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .el-menu--horizontal {
