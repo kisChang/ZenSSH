@@ -82,15 +82,15 @@ export default {
   :deep(.terminal-container) {
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
-  :deep(.file-list) {
-    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px);
-  }
 }
 
 .sftp-container {
   display: flex;
   flex-direction: column;
   height: 100%;
+  :deep(.file-list) {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 180px);
+  }
 }
 
 .mobile-sftp-header {
