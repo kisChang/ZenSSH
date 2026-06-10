@@ -1,6 +1,6 @@
 {
   "productName": "ZenSSH",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "$schema": "https://schema.tauri.app/config/2",
   "identifier": "io.github.kischang.zenssh",
   "build": {
