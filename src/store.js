@@ -395,7 +395,7 @@ export const appConfigStore = defineStore('AppConf', {
 });
 
 // 配置版本号，用于配置升级管理
-export const CONFIG_VERSION = 1;
+export const CONFIG_VERSION = 2;
 
 // 凭据默认值
 export const DEFAULT_CREDENTIAL = {
@@ -485,10 +485,128 @@ export const useMngStore = defineStore('UserConf', {
             if (currentVersion < 1) {
                 this.migrateV0ToV1();
             }
+            // 版本 1 -> 2 升级：清理和修复配置（移除冗余凭据字段、处理凭据重复、修复映射）
+            if (currentVersion < 2) {
+                this.migrateV1ToV2();
+            }
             // 更新到最新版本
             if (this._version !== CONFIG_VERSION) {
                 this._version = CONFIG_VERSION;
                 console.log(`[Migrate] Config upgraded to version ${CONFIG_VERSION}`);
+            }
+            // 强制刷新到本地存储（pinia-plugin-persistedstate）
+            this.$patch(() => {});
+            this.$persist();
+        },
+
+        // 版本 1 -> 2 升级：清理和修复配置（移除冗余凭据字段、处理凭据重复、修复映射关系）
+        migrateV1ToV2() {
+            console.log('[Migrate V1->V2] Starting config cleanup and fix...');
+            let fixedCount = 0;
+
+            // 1. 处理凭据重复：合并 username@host 相同的凭据
+            const credentialMap = new Map();
+            const duplicateCredentials = [];
+
+            this.credentialList.forEach(cred => {
+                // 使用 username@host 格式作为唯一标识（与 name 格式一致）
+                const key = (cred.username && cred.host)
+                    ? (cred.username + '@' + cred.host).toLowerCase()
+                    : (cred.name || '').toLowerCase();
+
+                if (!key) {
+                    // 没有有效标识的凭据，保留
+                    credentialMap.set(cred.credentialId, cred);
+                    return;
+                }
+                if (credentialMap.has(key)) {
+                    // 发现重复凭据
+                    duplicateCredentials.push({ old: cred, existing: credentialMap.get(key) });
+                } else {
+                    credentialMap.set(key, cred);
+                }
+            });
+
+            // 合并重复凭据：将配置从旧凭据迁移到已有凭据
+            duplicateCredentials.forEach(({ old: oldCred, existing: existingCred }) => {
+                console.log(`[Migrate V1->V2] Merging duplicate credential: "${oldCred.name}" -> "${existingCred.name}"`);
+                // 将使用旧凭据的配置迁移到新凭据
+                this.configList.forEach(config => {
+                    if (config.credentialId === oldCred.credentialId) {
+                        config.credentialId = existingCred.credentialId;
+                        fixedCount++;
+                    }
+                });
+            });
+
+            // 移除重复凭据，保留合并后的列表
+            const uniqueCredentials = Array.from(credentialMap.values());
+            const removedCount = this.credentialList.length - uniqueCredentials.length;
+            if (removedCount > 0) {
+                console.log(`[Migrate V1->V2] Removed ${removedCount} duplicate credentials`);
+                this.credentialList = uniqueCredentials;
+            }
+
+            // 2. 修复配置与凭据的映射关系
+            this.configList.forEach(config => {
+                // 检查是否有内嵌凭据信息但没有 credentialId
+                const hasEmbeddedAuth = config.password || config.privateKeyPath || config.privateKeyData;
+                const hasCredentialId = config.credentialId && this.credentialList.some(c => c.credentialId === config.credentialId);
+
+                if (hasEmbeddedAuth && !hasCredentialId) {
+                    // 配置有凭据信息但没有有效的 credentialId，尝试查找匹配的凭据或创建新的
+                    const matchCred = this.credentialList.find(c =>
+                        c.name === (config.username + '@' + config.host)
+                    );
+
+                    if (matchCred) {
+                        // 找到匹配的凭据，建立映射
+                        config.credentialId = matchCred.credentialId;
+                        console.log(`[Migrate V1->V2] Linked config to existing credential: ${config.username}@${config.host}`);
+                        fixedCount++;
+                    } else {
+                        // 创建新凭据
+                        const newCred = {
+                            credentialId: 'c_' + genId(),
+                            name: config.username + '@' + config.host,
+                            username: config.username || '',
+                            authType: config.authType || 'password',
+                            password: config.password || '',
+                            privateKeyPath: config.privateKeyPath || '',
+                            privateKeyData: config.privateKeyData || '',
+                            keyPassword: config.keyPassword || '',
+                            lastUpdate: Date.now(),
+                        };
+                        this.credentialList.push(newCred);
+                        config.credentialId = newCred.credentialId;
+                        console.log(`[Migrate V1->V2] Created new credential for: ${config.username}@${config.host}`);
+                        fixedCount++;
+                    }
+                }
+
+                // 3. 移除配置中不再需要的凭据字段（已迁移到凭据系统的）
+                if (config.credentialId) {
+                    delete config.password;
+                    delete config.privateKeyPath;
+                    delete config.privateKeyData;
+                    delete config.keyPassword;
+                    // username 和 authType 保留，因为配置本身可能需要显示这些信息
+                }
+            });
+
+            // 4. 清理无效的凭据引用
+            this.configList.forEach(config => {
+                if (config.credentialId && !this.credentialList.some(c => c.credentialId === config.credentialId)) {
+                    // credentialId 指向不存在的凭据，清除它
+                    console.log(`[Migrate V1->V2] Removing invalid credentialId from config: ${config.configId}`);
+                    delete config.credentialId;
+                    fixedCount++;
+                }
+            });
+            if (fixedCount > 0 || removedCount > 0) {
+                console.log(`[Migrate V1->V2] Fixed ${fixedCount} configs, removed ${removedCount} duplicate credentials`);
+            } else {
+                console.log('[Migrate V1->V2] No issues found');
             }
         },
 
