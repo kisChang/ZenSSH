@@ -4,7 +4,6 @@
     <div class="toolbar">
       <div class="path">📂 {{ currentDir }}</div>
       <div class="actions">
-        <button v-show="isMobile" @click="bakHostTab">GoHost</button>
         <button @click="goUp">🔼parent</button>
         <button @click="mkdir">📁mkdir</button>
         <button @click="touchFile">📄mkfile</button>
@@ -81,7 +80,7 @@ import {open, save} from '@tauri-apps/plugin-dialog';
 import {readFile, writeFile} from '@tauri-apps/plugin-fs';
 import {Channel, invoke} from '@tauri-apps/api/core'
 import {useTabsStore} from "@/store.js";
-import {genId, isMobile, sep} from "@/commons.js";
+import {genId, sep} from "@/commons.js";
 import TextEditor from "./TextEditor.vue";
 import {Download, Edit} from '@element-plus/icons-vue';
 
@@ -94,9 +93,6 @@ export default {
     }
   },
   computed: {
-    isMobile() {
-      return isMobile()
-    },
     sessionId(){
       return this.session.sessionId;
     },
@@ -337,10 +333,6 @@ export default {
       this.loadDir()
       return false
     },
-
-    bakHostTab() {
-      this.$bus.emit('show-host-list')
-    },
     disconnect() {
       if (this.closed) return;
       this.closed = true;
@@ -362,8 +354,6 @@ export default {
 }
 
 .file-manager {
-  max-width: 900px;
-  margin: auto;
   padding: 12px;
 }
 

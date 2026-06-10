@@ -4,9 +4,21 @@
               :ref="'xterm_' + currentConn.sessionId"
               :session="currentConn"/>
 
-    <sftp-file-browser v-else-if="currentConn && currentConn.type === 'sftp'"
-                       :ref="'sftp_' + currentConn.sessionId"
-                       :session="currentConn"/>
+    <div v-else-if="currentConn && currentConn.type === 'sftp'" class="sftp-container">
+      <div class="mobile-sftp-header">
+        <div class="header-left">
+          <el-button class="back-btn" :icon="ArrowLeft" circle @click="handleBack" />
+        </div>
+        <div class="header-center">
+          <span class="header-title">SFTP</span>
+        </div>
+        <div class="header-right">
+          <el-button class="back-btn" :icon="Close" circle @click="handleClose" />
+        </div>
+      </div>
+      <sftp-file-browser :ref="'sftp_' + currentConn.sessionId"
+                         :session="currentConn"/>
+    </div>
   </div>
 </template>
 
@@ -14,6 +26,7 @@
 import Terminal from "@/subs/Terminal.vue";
 import SftpFileBrowser from "@/subs/SftpFileBrowser.vue";
 import {useTabsStore} from "@/store.js";
+import {ArrowLeft, Close} from "@element-plus/icons-vue";
 
 export default {
   name: "MobileTerminal",
@@ -23,6 +36,8 @@ export default {
     return {
       tabStore: tabStore,
       currentConnId: null,
+      ArrowLeft: ArrowLeft,
+      Close: Close
     }
   },
   computed: {
@@ -34,6 +49,12 @@ export default {
   methods: {
     setActiveConn(id) {
       this.currentConnId = id
+    },
+    handleBack() {
+      this.$bus.emit('show-host-list')
+    },
+    handleClose() {
+      this.$bus.emit('tab-only-one')
     },
     async onBackButtonPress() {
       if (this.currentConn?.type === 'sftp' && this.$refs['sftp_' + this.currentConn.sessionId]) {
@@ -63,6 +84,65 @@ export default {
   }
   :deep(.file-list) {
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px);
+  }
+}
+
+.sftp-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mobile-sftp-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg-header-start);
+  border-bottom: 1px solid var(--border-color);
+
+  .header-left,
+  .header-right {
+    display: flex;
+    align-items: center;
+    width: 60px;
+  }
+
+  .header-right {
+    justify-content: flex-end;
+  }
+
+  .header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+
+    &:active {
+      background: var(--bg-hover);
+    }
   }
 }
 </style>
