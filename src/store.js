@@ -480,7 +480,6 @@ export const useMngStore = defineStore('UserConf', {
         // 根据当前版本号逐步执行升级操作
         migrateOldConfigs() {
             const currentVersion = this._version || 0;
-            console.log('migrateOldConfigs>>>', currentVersion)
             // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据，并添加排序字段
             if (currentVersion < 1) {
                 this.migrateV0ToV1();
@@ -727,15 +726,6 @@ export const useMngStore = defineStore('UserConf', {
             // 确保新字段有默认值
             normalizeConfig(config);
 
-            // 如果有凭据ID，关联凭据
-            if (config.credentialId) {
-                const cred = this.getCredentialById(config.credentialId);
-                if (cred) {
-                    // 同步认证信息到配置（用于后端连接）
-                    this.syncAuthInfoToConfig(config, cred);
-                }
-            }
-
             this.configList.push(config);
             // 同步配置到后端
             this.syncConfig(this.configList).then()
@@ -755,18 +745,6 @@ export const useMngStore = defineStore('UserConf', {
         updateConfig(config) {
             normalizeConfig(config);
             let find = this.configList.find(item => item.configId === config.configId)
-
-            // 如果有凭据ID，同步认证信息
-            if (config.credentialId) {
-                const cred = this.getCredentialById(config.credentialId);
-                if (cred) {
-                    this.syncAuthInfoToConfig(config, cred);
-                }
-            } else if (config.passwordNew !== "***************") {
-                // 直接更新密码（旧模式兼容）
-                config.password = config.passwordNew;
-            }
-            delete config.passwordNew;
             Object.assign(find, config)
             this.syncConfig(this.configList).then()
         },
@@ -872,7 +850,13 @@ export const useTabsStore = defineStore('counter', {
     actions: {
         connectConfig(config, type) {
             config = Object.assign({}, config);
+            // 处理默认属性
             normalizeConfig(config)
+            // 加载凭据信息，覆盖到config中
+            const cred = useMngStore().getConfigCredential(config);
+            if (cred) {
+                useMngStore().syncAuthInfoToConfig(config, cred);
+            }
             let title = config.name;
             if (!title) {
                 if (config.type === 'serial') {
