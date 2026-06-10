@@ -56,13 +56,15 @@ export default {
 
       this._activateImmediate();
 
-      // Start long-press timer that will start repeating
-      this._longPressTimer = setTimeout(() => {
-        // start repeating
-        this._repeatTimer = setInterval(() => {
-          this._keyDown();
-        }, this.repeatInterval);
-      }, this.longPressDelay);
+      if (this.longPressDelay > 0) {
+        // Start long-press timer that will start repeating
+        this._longPressTimer = setTimeout(() => {
+          // start repeating
+          this._repeatTimer = setInterval(() => {
+            this._keyDown();
+          }, this.repeatInterval);
+        }, this.longPressDelay);
+      }
 
       // Listen for move if pointer events are not present
       if (!this._usingPointer) {
