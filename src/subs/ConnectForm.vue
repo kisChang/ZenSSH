@@ -313,8 +313,6 @@ export default {
   },
   mounted() {
     this.bastionSessions = useMngStore().configList
-    // 确保旧配置升级
-    this.mngStore.migrateOldConfigs();
   },
   methods: {
     openCreateCredentialDialog() {

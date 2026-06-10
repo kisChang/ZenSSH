@@ -349,9 +349,7 @@ export const appConfigStore = defineStore('AppConf', {
             mergedList = mergedList.filter(item => !deletedIdSet.has(item.configId));
 
             // 合并凭据删除标记
-            const cloudCredDeletedIds = cloudContent.credentialDeletedIds || [];
-            const localCredDeletedIds = localContent.credentialDeletedIds || [];
-            const mergedCredDeletedIds = mergeDeletedIds(cloudCredDeletedIds, localCredDeletedIds);
+            const mergedCredDeletedIds = mergeDeletedIds(cloudContent.credentialDeletedIds, localContent.credentialDeletedIds);
             // 用删除标记过滤已删除的凭据
             const deletedCredIdSet = new Set(mergedCredDeletedIds.map(d => d.configId));
             mergedCredentialList = mergedCredentialList.filter(item => !deletedCredIdSet.has(item.credentialId));
@@ -365,12 +363,11 @@ export const appConfigStore = defineStore('AppConf', {
 
             // 更新 store 状态
             useMngStore().$state = {
-                ...cloudContent,
-                ...localContent,
+                _version: mergedVersion,
                 configList: mergedList,
                 credentialList: mergedCredentialList,
                 credentialDeletedIds: mergedCredDeletedIds,
-                _version: mergedVersion,
+                deletedIds: mergedDeletedIds,
             };
 
             // 更新本地删除标记并清理过期记录
@@ -448,10 +445,12 @@ export function extractCredentialFromConfig(config) {
 export const useMngStore = defineStore('UserConf', {
     persist: true,
     state: () => ({
-        configList: [],
-        credentialList: [],
         // 配置版本号，用于管理配置升级
         _version: 0,
+        configList: [],
+        credentialList: [],
+        deletedIds: [],
+        credentialDeletedIds: [],
     }),
     getters: {
         getById(state, id) {
@@ -481,6 +480,7 @@ export const useMngStore = defineStore('UserConf', {
         // 根据当前版本号逐步执行升级操作
         migrateOldConfigs() {
             const currentVersion = this._version || 0;
+            console.log('migrateOldConfigs>>>', currentVersion)
             // 版本 0 -> 1 升级：将内嵌的凭据提取为独立凭据，并添加排序字段
             if (currentVersion < 1) {
                 this.migrateV0ToV1();
@@ -603,6 +603,25 @@ export const useMngStore = defineStore('UserConf', {
                     fixedCount++;
                 }
             });
+
+            // 5. 清理孤立的凭据（没有被任何配置使用的凭据）
+            console.log('usedCredentialIds>>>')
+            const usedCredentialIds = new Set(
+                this.configList
+                    .filter(c => c.credentialId)
+                    .map(c => c.credentialId)
+            );
+            const orphanedCredentials = this.credentialList.filter(
+                cred => !usedCredentialIds.has(cred.credentialId)
+            );
+            if (orphanedCredentials.length > 0) {
+                console.log(`[Migrate V1->V2] Removing ${orphanedCredentials.length} orphaned credentials`);
+                this.credentialList = this.credentialList.filter(
+                    cred => usedCredentialIds.has(cred.credentialId)
+                );
+            }
+            console.log('this.credentialList>>>', this.credentialList.length)
+
             if (fixedCount > 0 || removedCount > 0) {
                 console.log(`[Migrate V1->V2] Fixed ${fixedCount} configs, removed ${removedCount} duplicate credentials`);
             } else {

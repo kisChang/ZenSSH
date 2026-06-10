@@ -90,8 +90,6 @@ export default {
     },
   },
   mounted() {
-    // 确保旧配置已升级
-    this.mngStore.migrateOldConfigs();
   },
   methods: {
     getUsageCount(credentialId) {

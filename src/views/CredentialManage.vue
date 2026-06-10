@@ -91,8 +91,6 @@ export default {
     },
   },
   mounted() {
-    // 确保旧配置已升级
-    this.mngStore.migrateOldConfigs();
   },
   methods: {
     // 获取凭据使用数量
