@@ -199,9 +199,13 @@ export default {
     onBackButtonPress() {
       ElMessageBox.close()
       if (this.activeTab === 'host') {
-        this.$confirm("确认退出？", {showClose: false}).then(() => {
-          exit(0)
-        }).catch(() => {})
+        this.$refs.hostMng.onBackButtonPress().then(rv => {
+          if (rv) {
+            this.$confirm("确认退出？", {showClose: false}).then(() => {
+              exit(0)
+            }).catch(() => {})
+          }
+        })
       } else if (this.activeTab === 'conn'){
         if (this.showTerminal) {
           // 从终端页面返回，先回到连接列表

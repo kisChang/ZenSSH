@@ -120,6 +120,17 @@ export default {
     }
   },
   methods: {
+    async onBackButtonPress() {
+      if (this.showConnect) {
+        this.showConnect = false
+        return false;
+      }
+      if (this.showDrawer) {
+        this.showDrawer = false
+        return false;
+      }
+      return true;
+    },
     handleConnNew() {
       this.config = Object.assign({}, DEFAULT_CONFIG);
       this.showConnect = true
