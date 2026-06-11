@@ -453,12 +453,6 @@ export const useMngStore = defineStore('UserConf', {
         credentialDeletedIds: [],
     }),
     getters: {
-        getById(state, id) {
-            return state.configList.find(item => item.configId === id);
-        },
-        getCredentialById(state) {
-            return (id) => state.credentialList.find(item => item.credentialId === id);
-        },
         // 获取凭据选项列表（用于选择框）
         credentialOptions(state) {
             return state.credentialList.map(item => ({
@@ -477,6 +471,13 @@ export const useMngStore = defineStore('UserConf', {
         }
     },
     actions: {
+        getById(id) {
+            return this.configList.find(item => item.configId === id);
+        },
+        getCredentialById(id) {
+            return this.credentialList.find(item => item.credentialId === id);
+        },
+
         // 根据当前版本号逐步执行升级操作
         migrateOldConfigs() {
             const currentVersion = this._version || 0;
@@ -604,7 +605,6 @@ export const useMngStore = defineStore('UserConf', {
             });
 
             // 5. 清理孤立的凭据（没有被任何配置使用的凭据）
-            console.log('usedCredentialIds>>>')
             const usedCredentialIds = new Set(
                 this.configList
                     .filter(c => c.credentialId)
@@ -619,7 +619,6 @@ export const useMngStore = defineStore('UserConf', {
                     cred => usedCredentialIds.has(cred.credentialId)
                 );
             }
-            console.log('this.credentialList>>>', this.credentialList.length)
 
             if (fixedCount > 0 || removedCount > 0) {
                 console.log(`[Migrate V1->V2] Fixed ${fixedCount} configs, removed ${removedCount} duplicate credentials`);
@@ -781,7 +780,12 @@ export const useMngStore = defineStore('UserConf', {
 
             let backendConfig = {};
             this.configList.forEach(item => {
-                backendConfig[item.configId] = item;
+                const config = Object.assign({}, item);
+                const cred = useMngStore().getConfigCredential(config);
+                if (cred) {
+                    useMngStore().syncAuthInfoToConfig(config, cred);
+                }
+                backendConfig[item.configId] = config
             })
             await invoke('sync_config', { configMap: backendConfig });
         },
@@ -856,6 +860,23 @@ export const useTabsStore = defineStore('counter', {
             const cred = useMngStore().getConfigCredential(config);
             if (cred) {
                 useMngStore().syncAuthInfoToConfig(config, cred);
+            }
+            // 处理跳板机配置更新问题
+            if (config.bastionConfigId) {
+                const backendConfig = {}
+                let bastionConfigId = config.bastionConfigId
+                while (bastionConfigId) {
+                    const tmp = Object.assign({}, useMngStore().getById(bastionConfigId));
+                    bastionConfigId = tmp?.bastionConfigId
+                    if (tmp) {
+                        const cred = useMngStore().getConfigCredential(tmp);
+                        if (cred) {
+                            useMngStore().syncAuthInfoToConfig(tmp, cred);
+                        }
+                        backendConfig[tmp.configId] = tmp
+                    }
+                }
+                invoke('sync_config', { configMap: backendConfig }).then()
             }
             let title = config.name;
             if (!title) {

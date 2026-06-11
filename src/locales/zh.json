@@ -66,7 +66,7 @@
     "bastionConfigId_placeholder": "请选择跳板会话（可选）",
     "credential": "凭据",
     "credential_placeholder": "选择凭据",
-    "portForward": "端口转发",
+    "portForward": "映射",
     "timeout": "超时(秒)",
     "keepaliveInterval": "保活间隔",
     "name_message": "名称长度限制在3-20字符",

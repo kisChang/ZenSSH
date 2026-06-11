@@ -68,7 +68,7 @@
     "credential_placeholder": "Select credential",
     "timeout": "Timeout (seconds)",
     "keepaliveInterval": "Keepalive Interval",
-    "portForward": "PortForward",
+    "portForward": "Ports",
     "name_message": "Name length must be between 3 and 20 characters",
     "host_message": "Please enter the host address",
     "port_message": "Please enter the SSH port",
