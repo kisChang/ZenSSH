@@ -102,8 +102,10 @@ export default {
           confirmButtonText: '信任并继续',
           cancelButtonText: '拒绝',
           type: 'warning',
-          distinguishCancelAndClose: true,
           dangerouslyUseHTMLString: true,
+          closeOnClickModal: false,
+          closeOnEsc: false,
+          showClose: false,
         });
         // 用户点击确认，记录指纹
         hostKeyStore.markConfirmed(fingerprint, payload.keyType);

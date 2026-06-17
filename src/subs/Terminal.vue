@@ -235,8 +235,13 @@ export default {
         this.handleAutocomplete(key)
       })
       this.updateTerminalSize()
-      // 处理触摸事件
-      this.bindTouchEvents()
+      if (isMobile()) {
+        // 处理移动端拖选事件
+        this.bindTouchEvents()
+      } else {
+        // PC端复制功能
+        this.bindPCCopyEvents()
+      }
     },
 
     pressKeyboard(code) {
@@ -340,6 +345,28 @@ export default {
       // doc.removeEventListener('mousemove', this.onTouchMove)
       // doc.removeEventListener('mouseup', this.onTouchEnd)
     },
+
+    // PC端复制功能
+    bindPCCopyEvents() {
+      if (!this.term) return
+      this.term.onSelectionChange(() => {
+        const selectionText = this.term.getSelection()
+        if (selectionText && selectionText.trim()) {
+          writeText(selectionText).then(() => {
+            this.$notify({
+              type: 'success',
+              message: '已复制到剪切板'
+            })
+          }).catch(err => {
+            this.$notify({
+              type: 'error',
+              message: '复制到剪切板失败：' + err
+            })
+          })
+        }
+      })
+    },
+
     fun_clientXY(event, name) {
       if (event[name]) {
         return event[name]
@@ -426,9 +453,9 @@ export default {
           this.endSelect = null
           const selectionText = this.term.getSelection()
           writeText(selectionText).then(() => {
-            this.notify.success('已复制到剪切板')
+            this.$notify.success('已复制到剪切板')
           }).catch(err => {
-            this.notify.error('复制到剪切板失败：' + err)
+            this.$notify.error('复制到剪切板失败：' + err)
           })
         } else {
           this.endSelect = this.startSelect
