@@ -30,9 +30,30 @@
         <setting-form />
       </div>
 
-      <terminal :ref="'xterm_' + item.sessionId" v-else-if="item.type === 'connect' || item.type === 'serial'" :session="item"/>
+      <!-- 使用 splitter 分割 terminal 和 sftp (仅SSH连接) -->
+      <div v-else-if="item.type === 'connect'" class="ssh-container">
+        <el-splitter direction="vertical" class="terminal-splitter">
+          <el-splitter-panel>
+            <terminal :ref="'xterm_' + item.sessionId" :session="item"/>
+          </el-splitter-panel>
+          <el-splitter-panel v-if="item.showSftp" :min="400" :size="400">
+            <sftp-file-browser :ref="'sftp_' + item.sessionId" :session="item"/>
+          </el-splitter-panel>
+        </el-splitter>
+        <div class="monitor-bar">
+          <server-monitor :session-id="item.sessionId" class="monitor-content"/>
+          <el-button
+              class="sftp-toggle-btn"
+              :type="item.showSftp ? 'primary' : 'default'"
+              size="small"
+              @click.stop="toggleSftp(item)">
+            <el-icon><Folder v-if="item.showSftp"/><FolderOpened v-else/></el-icon>
+            SFTP
+          </el-button>
+        </div>
+      </div>
 
-      <sftp-file-browser :ref="'sftp_' + item.sessionId" v-else-if="item.type === 'sftp'" :session="item"/>
+      <terminal v-else-if="item.type === 'serial'" :ref="'xterm_' + item.sessionId" :session="item"/>
     </el-tab-pane>
 
     <el-dropdown
@@ -61,10 +82,12 @@
 import { keepScreenOn } from "tauri-plugin-keep-screen-on-api";
 import Terminal from "@/subs/Terminal.vue";
 import SftpFileBrowser from "@/subs/SftpFileBrowser.vue";
+import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {invoke} from "@tauri-apps/api/core";
 import {useTabsStore} from "@/store.js";
 import SettingForm from "@/subs/SettingForm.vue";
 import {isMobile} from "@/commons.js";
+import {Folder, FolderOpened} from "@element-plus/icons-vue";
 
 export default {
   name: "TerminalTabs",
@@ -74,7 +97,7 @@ export default {
       default: false,
     }
   },
-  components: {SettingForm, Terminal, SftpFileBrowser},
+  components: {SettingForm, Terminal, SftpFileBrowser, ServerMonitor, Folder, FolderOpened},
   data() {
     const tabStore = useTabsStore()
     return {
@@ -131,12 +154,6 @@ export default {
   },
   methods: {
     async onBackButtonPress() {
-      if (this.isMobile && this.activeTabContext && this.activeTabContext.length) {
-        let context = this.activeTabContext[0]
-        if (context.type === 'sftp' && this.$refs['sftp_' + context.sessionId]) {
-          return this.$refs['sftp_' + context.sessionId][0].onBackButtonPress()
-        }
-      }
       return true
     },
     autoFocusTab() {
@@ -168,15 +185,13 @@ export default {
       if (this.tabs.find(t => t.sessionId === sessionId)) {
         if (this.$refs['xterm_' + sessionId] && this.$refs['xterm_' + sessionId].length)
           this.$refs['xterm_' + sessionId][0].disconnect()
-        if (this.$refs['sftp_' + sessionId] && this.$refs['sftp_' + sessionId].length)
-          this.$refs['sftp_' + sessionId][0].disconnect()
       }
     },
     showQuickConn() {
       this.$bus.emit('show-quick-connect')
     },
-    showHostList() {
-      this.$bus.emit('show-host-list')
+    toggleSftp(item) {
+      this.tabStore.setShowSftp(item.sessionId, !item.showSftp);
     },
 
     handleContextmenu(event) {
@@ -291,10 +306,74 @@ export default {
     }
   }
 
+  .sftp-icon {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    margin-left: 8px;
+    border-radius: 50%;
+    opacity: 0.6;
+    color: #67C23A;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    &:hover {
+      opacity: 1;
+      color: #67C23A;
+    }
+  }
+
   .setting-tab {
     padding: 20px;
     height: 100%;
     overflow: auto;
+  }
+
+  .ssh-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .terminal-splitter {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    :deep(.el-splitter) {
+      height: 100%;
+    }
+    :deep(.el-splitter-panel) {
+      width: 100%;
+      overflow: hidden;
+    }
+  }
+
+  .monitor-bar {
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 12px;
+    background: linear-gradient(90deg, var(--bg-status-start) 0%, var(--bg-status-end) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    .monitor-content {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .sftp-toggle-btn {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      height: 22px;
+    }
   }
 }
 @media (max-width: 768px) {

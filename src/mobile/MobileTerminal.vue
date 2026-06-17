@@ -1,10 +1,10 @@
 <template>
   <div class="mobile-terminal">
-    <terminal v-if="currentConn && (currentConn.type === 'connect' || currentConn.type === 'serial')"
+    <terminal v-if="currentConn && (currentConn.type === 'connect' || currentConn.type === 'serial') && !isSftpActive"
               :ref="'xterm_' + currentConn.sessionId"
               :session="currentConn"/>
 
-    <div v-else-if="currentConn && currentConn.type === 'sftp'" class="sftp-container">
+    <div v-if="currentConn && (currentConn.type === 'sftp' || (currentConn.type === 'connect' && isSftpActive))" class="sftp-container">
       <div class="mobile-sftp-header">
         <div class="header-left">
           <el-button class="back-btn" :icon="ArrowLeft" circle @click="handleBack" />
@@ -44,6 +44,9 @@ export default {
     currentConn() {
       if (!this.currentConnId) return null
       return this.tabStore.connList.find(v => v.id === this.currentConnId)
+    },
+    isSftpActive() {
+      return this.currentConn && this.tabStore.activeSftpSession === this.currentConn.sessionId
     }
   },
   methods: {
@@ -51,13 +54,23 @@ export default {
       this.currentConnId = id
     },
     handleBack() {
-      this.$bus.emit('show-host-list')
+      // 如果当前在SFTP视图，切换回Terminal视图
+      if (this.isSftpActive) {
+        this.tabStore.deactivateSftp();
+      } else {
+        this.$bus.emit('show-host-list')
+      }
     },
     handleClose() {
-      this.$bus.emit('tab-only-one')
+      // 关闭SFTP时切换回Terminal视图
+      if (this.isSftpActive) {
+        this.tabStore.deactivateSftp();
+      } else {
+        this.$bus.emit('tab-only-one')
+      }
     },
     async onBackButtonPress() {
-      if (this.currentConn?.type === 'sftp' && this.$refs['sftp_' + this.currentConn.sessionId]) {
+      if ((this.currentConn?.type === 'sftp' || this.isSftpActive) && this.$refs['sftp_' + this.currentConn.sessionId]) {
         return this.$refs['sftp_' + this.currentConn.sessionId].onBackButtonPress()
       }
       return true

@@ -50,9 +50,9 @@
                 <span v-else-if="item.state === 1">已连接</span>
                 <span v-else-if="item.state === 2">已断开</span>
               </div>-->
-                  <div v-if="item.type === 'sftp'" class="sftp-indicator">
+                  <div v-if="item.type === 'connect' && item.state === 1" class="serial-indicator">
                     <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
-                    <span class="sftp-text">SFTP</span>
+                    <span class="serial-text">SSH</span>
                   </div>
                   <div v-if="item.config?.type === 'serial' && item.state === 1" class="serial-indicator">
                     <el-icon :size="10" color="#E6A23C"><Cpu /></el-icon>
@@ -68,6 +68,13 @@
                     </div>
                   </div>
                 </div>
+                <el-button v-if="item.type === 'connect' && item.state === 1"
+                           style="background: none;padding: 15px;"
+                           size="small"
+                           circle
+                           @click="openSftp(item)">
+                  <el-icon class="conn-arrow" :size="15"><Folder /></el-icon>
+                </el-button>
                 <el-button style="background: none;padding: 15px;"
                            size="small"
                            circle
@@ -160,11 +167,6 @@ export default {
     this.$bus.on('mobile-connect-ssh', (config) => {
       this.toggleTab('conn')
       this.tabsStore.connectConfig(config, 'connect')
-      this.showTerminal = true
-    })
-    this.$bus.on('mobile-connect-sftp', (config) => {
-      this.toggleTab('conn')
-      this.tabsStore.connectConfig(config, 'sftp')
       this.showTerminal = true
     })
     this.$bus.on('show-quick-connect', () => {
@@ -273,6 +275,17 @@ export default {
     },
     openMonitor(item) {
       this.monitorSession = item;
+    },
+    openSftp(item) {
+      if (item.state === 1 && item.type === 'connect') {
+        this.tabsStore.activateSftp(item.sessionId);
+        this.showTerminal = true;
+        this.$nextTick(() => {
+          if (this.$refs.mobileTerminal) {
+            this.$refs.mobileTerminal.setActiveConn(item.id);
+          }
+        });
+      }
     },
   }
 };

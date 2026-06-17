@@ -162,18 +162,7 @@ export default {
       return this.goUp()
     },
     async connect() {
-      const connectConfig = Object.assign({}, this.session.config)
-      connectConfig.configId = this.session.configId
-      connectConfig.sessionId = this.session.sessionId
-      const onEvent = new Channel();
-      await invoke("ssh_connect", {
-        onEvent: onEvent,
-        sessionId: this.sessionId,
-        cols: 60,
-        rows: 40,
-        config: connectConfig
-      });
-      // 获取当前目录
+      // 直接使用sessionId初始化SFTP
       await invoke('ssh_sftp_open', { sessionId: this.sessionId })
       this.currentDir = await invoke('ssh_sftp_canonicalize', { sessionId: this.sessionId, filePath: '.' })
       await this.loadDir()
@@ -336,8 +325,8 @@ export default {
     disconnect() {
       if (this.closed) return;
       this.closed = true;
-      this.tabStore.connectClose(this.sessionId);
-      invoke("ssh_close", { sessionId: this.sessionId }).catch(() => {});
+      // 不再关闭SSH连接，因为SFTP和Terminal共用同一个连接
+      // SSH连接的关闭由Terminal组件处理
     },
   },
 }
@@ -355,6 +344,9 @@ export default {
 
 .file-manager {
   padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 顶部 */

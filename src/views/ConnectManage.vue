@@ -68,7 +68,6 @@
       <template #dropdown>
         <el-dropdown-menu>
             <el-dropdown-item @click="dropdownConnect">{{ $t('main.quickConnect') }}</el-dropdown-item>
-          <el-dropdown-item @click="dropdownConnectSftp">{{ $t('sftp.main') }}</el-dropdown-item>
           <el-dropdown-item @click="dropdownShowConfig">{{ $t('main.setting') }}</el-dropdown-item>
           <el-dropdown-item @click="dropdownRemove">{{ $t('common.delete') }}</el-dropdown-item>
         </el-dropdown-menu>
@@ -145,9 +144,6 @@ export default {
 
     dropdownConnect() {
       this.configReConnect(this.triggerConfig)
-    },
-    dropdownConnectSftp() {
-      useTabsStore().connectConfig(this.triggerConfig, 'sftp')
     },
     dropdownShowConfig() {
       this.showConnect = true

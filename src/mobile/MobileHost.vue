@@ -71,9 +71,6 @@
           <el-alert :title="$t('main.quickConnect')" type="primary" show-icon :closable="false" @click="handleConnConf">
             <template #icon><Connection /></template>
           </el-alert>
-          <el-alert title="文件管理" type="primary" show-icon :closable="false" @click="handleConnSftp">
-            <template #icon><Files /></template>
-          </el-alert>
           <el-alert title="更新配置" type="primary" show-icon :closable="false" @click="handleUpdateConf">
             <template #icon><Edit /></template>
           </el-alert>
@@ -148,10 +145,6 @@ export default {
     handleConnConf(){
       this.showDrawer = false
       this.$bus.emit('mobile-connect-ssh', this.config)
-    },
-    handleConnSftp(){
-      this.showDrawer = false
-      this.$bus.emit('mobile-connect-sftp', this.config)
     },
     handleUpdateConf(){
       this.showConnect = true

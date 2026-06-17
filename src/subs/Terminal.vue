@@ -51,6 +51,7 @@ export default {
       term: null, termStyle: { height: 'auto' },
       enableKeyboard: false,
       currenLine: "", showAutocomplete: {show: false, left: '100px', top: '100px'},
+      resizeObserver: null,
     }
   },
   mounted() {
@@ -63,6 +64,11 @@ export default {
         this.disconnect();
       });
       this.updateTerminalSize();
+      // 监听容器大小变化
+      this.resizeObserver = new ResizeObserver(() => {
+        this.fitTerminal();
+      });
+      this.resizeObserver.observe(this.$refs.container);
     }).catch(err => {
       this.disconnect();
       this.$notify({
@@ -72,6 +78,10 @@ export default {
     });
   },
   beforeUnmount() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     this.disconnect();
   },
   methods: {
@@ -308,6 +318,18 @@ export default {
       this.term.options = { disableStdin: disableStdin }
       this.term.textarea.readOnly = disableStdin
       this.updateTerminalSize()
+    },
+    fitTerminal() {
+      if (!this.term || !this.fitAddon) return
+      this.fitAddon.fit()
+      // 通知后端终端大小变化
+      if (this.session.config?.type === 'connect') {
+        invoke('ssh_window_change', {
+          sessionId: this.sessionId,
+          colWidth: this.term.cols,
+          rowHeight: this.term.rows
+        }).catch(() => {})
+      }
     },
     updateTerminalSize() {
       if (!this.term || !this.fitAddon) return

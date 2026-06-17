@@ -897,9 +897,47 @@ export const useTabsStore = defineStore('counter', {
                 config: config,
             });
         },
+        // 切换指定session的SFTP显示状态
+        toggleSftp(sessionId) {
+            const conn = this.connList.find(item => item.sessionId === sessionId);
+            if (conn && conn.type === 'connect' && conn.state === 1) {
+                // 切换当前连接项的SFTP显示状态
+                conn.showSftp = !conn.showSftp;
+                return conn.showSftp;
+            }
+            return false;
+        },
+        // 设置指定session的SFTP显示状态
+        setShowSftp(sessionId, show) {
+            const conn = this.connList.find(item => item.sessionId === sessionId);
+            if (conn && conn.type === 'connect' && conn.state === 1) {
+                conn.showSftp = show;
+                return true;
+            }
+            return false;
+        },
+        // 兼容旧API - 激活指定session的SFTP功能
+        activateSftp(sessionId) {
+            return this.setShowSftp(sessionId, true);
+        },
+        // 兼容旧API - 清除SFTP激活状态
+        deactivateSftp() {
+            const conn = this.connList.find(item => item.showSftp);
+            if (conn) {
+                conn.showSftp = false;
+                return true;
+            }
+            return false;
+        },
         connectSuccess(id) {
             let find = this.connList.find(item => item.id === id)
-            if (find) find.state = 1
+            if (find) {
+                find.state = 1
+                // SSH连接成功后默认显示SFTP
+                if (find.type === 'connect') {
+                    find.showSftp = true;
+                }
+            }
         },
         connectClose(id) {
             let find = this.connList.find(item => item.id === id)

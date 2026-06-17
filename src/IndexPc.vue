@@ -55,11 +55,8 @@
         <credential-manage v-else-if="panelMode === 'credential'" />
       </el-splitter-panel>
       <el-splitter-panel :min="200">
-        <div class="terminal-panel" :class="showStatusBar ? 'terminal-panel' : 'terminal-panel no_bar'">
+        <div class="terminal-panel">
           <terminal-tabs ref="terminalTabs" @tab-change="tabChange"/>
-          <div class="status-bar" v-if="showStatusBar">
-            <server-monitor :session-id="activeSessionId"/>
-          </div>
         </div>
       </el-splitter-panel>
     </el-splitter>
@@ -74,19 +71,13 @@ import {exit, relaunch} from '@tauri-apps/plugin-process';
 import ConnectManage from "./views/ConnectManage.vue";
 import CredentialManage from "./views/CredentialManage.vue";
 import TerminalTabs from "./pc/TerminalTabs.vue";
-import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 
 export default {
   name: "IndexPc",
-  components: {ServerMonitor, TerminalTabs, ConnectManage, CredentialManage},
+  components: {TerminalTabs, ConnectManage, CredentialManage},
   props: {
     isLoading: false,
-  },
-  computed: {
-    showStatusBar() {
-      return this.activeSessionId && this.activeSessionType === 'ssh'
-    }
   },
   data() {
     return {
@@ -94,7 +85,6 @@ export default {
       activeMenu: "",
       showUpdater: false,
       activeSessionId: null,
-      activeSessionType: 'welcome',
       panelMode: 'host', // 'host' | 'credential'
       isDownloading: false,
       downloadProgress: 0,
@@ -106,9 +96,8 @@ export default {
     this.handleCheckUpdate();
   },
   methods: {
-    tabChange(tab, item) {
-      this.activeSessionId = tab;
-      this.activeSessionType = item?.config?.type;
+    tabChange(sessionId, item) {
+      this.activeSessionId = sessionId;
     },
     handleCheckUpdate(byUser) {
       check().then(update => {
@@ -239,7 +228,7 @@ export default {
 .terminal-panel {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px);
+  height: 100%;
   :deep(.terminal-tabs),
   :deep(.terminal-tabs-welcome) {
     flex: 1 1 0;
@@ -250,28 +239,6 @@ export default {
   :deep(.terminal-container) {
     height: calc(100vh - 110px);
   }
-  &.no_bar {
-    :deep(.terminal-container) {
-      height: calc(100vh - 70px);
-    }
-  }
-}
-
-.status-bar {
-  flex-shrink: 0;
-  height: 28px;
-  padding: 0 16px;
-  background: linear-gradient(90deg, var(--bg-status-start) 0%, var(--bg-status-end) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.status-bar-empty {
-  font-size: 12px;
-  color: var(--text-muted);
 }
 
 .download-info {
