@@ -1,6 +1,8 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 
+import "@xterm/xterm/css/xterm.css";
+
 const app = createApp(App);
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'

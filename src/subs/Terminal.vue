@@ -104,6 +104,7 @@ export default {
       this.term = new Terminal({
         cursorBlink: true,
         fontSize: fontSize,
+        lineHeight: 1.2,
         disableStdin: this.enableKeyboard,
         fontFamily: 'monospace',
         overviewRuler: {
