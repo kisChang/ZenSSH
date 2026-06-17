@@ -45,15 +45,6 @@
                 <div class="conn-info"
                      @click="selectConn(item)">
                   <div class="conn-title">{{ item.title }}</div>
-<!--              <div class="conn-state">
-                <span v-if="item.state === 0">连接中...</span>
-                <span v-else-if="item.state === 1">已连接</span>
-                <span v-else-if="item.state === 2">已断开</span>
-              </div>-->
-                  <div v-if="item.type === 'connect' && item.state === 1" class="serial-indicator">
-                    <el-icon :size="10" color="#67C23A"><Folder /></el-icon>
-                    <span class="serial-text">SSH</span>
-                  </div>
                   <div v-if="item.config?.type === 'serial' && item.state === 1" class="serial-indicator">
                     <el-icon :size="10" color="#E6A23C"><Cpu /></el-icon>
                     <span class="serial-text">Serial</span>
@@ -72,13 +63,13 @@
                            style="background: none;padding: 15px;"
                            size="small"
                            circle
-                           @click="openSftp(item)">
+                           @click.stop="openSftp(item)">
                   <el-icon class="conn-arrow" :size="15"><Folder /></el-icon>
                 </el-button>
                 <el-button style="background: none;padding: 15px;"
                            size="small"
                            circle
-                           @click="closeConn(item)">
+                           @click.stop="closeConn(item)">
                   <el-icon class="conn-arrow" :size="15"><Close/></el-icon>
                 </el-button>
               </div>
@@ -148,7 +139,6 @@ export default {
       title: '',
       tabsStore: tabsStore,
       showTerminal: false,
-      monitorSession: null,
       transitionName: 'slide-left',
       tabIndexMap: { 'host': 0, 'credential': 1, 'conn': 2, 'setting': 3 },
     }
@@ -273,16 +263,14 @@ export default {
         }
       })
     },
-    openMonitor(item) {
-      this.monitorSession = item;
-    },
     openSftp(item) {
       if (item.state === 1 && item.type === 'connect') {
-        this.tabsStore.activateSftp(item.sessionId);
+        // 移动端需要手动点击SFTP按钮才显示，不默认显示
         this.showTerminal = true;
         this.$nextTick(() => {
           if (this.$refs.mobileTerminal) {
             this.$refs.mobileTerminal.setActiveConn(item.id);
+            this.tabsStore.setShowSftp(item.id, true);
           }
         });
       }

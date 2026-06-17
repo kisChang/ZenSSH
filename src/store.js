@@ -1,7 +1,7 @@
 import {defineStore} from 'pinia'
 import {invoke} from "@tauri-apps/api/core";
 import {deletePassword, getPassword, initializeKeyring, setPassword} from "@/utils/plugin-keyring.js";
-import {CONSTANT, genId} from "@/commons.js";
+import {CONSTANT, genId, isMobile} from "@/commons.js";
 import client from "@/request.js"
 import {webdavGet, webdavPut} from "@/utils/webdav.js";
 
@@ -916,25 +916,12 @@ export const useTabsStore = defineStore('counter', {
             }
             return false;
         },
-        // 兼容旧API - 激活指定session的SFTP功能
-        activateSftp(sessionId) {
-            return this.setShowSftp(sessionId, true);
-        },
-        // 兼容旧API - 清除SFTP激活状态
-        deactivateSftp() {
-            const conn = this.connList.find(item => item.showSftp);
-            if (conn) {
-                conn.showSftp = false;
-                return true;
-            }
-            return false;
-        },
         connectSuccess(id) {
             let find = this.connList.find(item => item.id === id)
             if (find) {
                 find.state = 1
-                // SSH连接成功后默认显示SFTP
-                if (find.type === 'connect') {
+                // SSH连接成功后默认显示SFTP（仅PC端）
+                if (find.type === 'connect' && !isMobile()) {
                     find.showSftp = true;
                 }
             }

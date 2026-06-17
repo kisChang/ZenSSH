@@ -94,7 +94,7 @@ export default {
   },
   computed: {
     sessionId(){
-      return this.session.sessionId;
+      return this.session?.sessionId ?? '';
     },
     sortedFiles() {
       return [...this.files].sort((a, b) => {
@@ -111,6 +111,9 @@ export default {
         )
       })
     },
+    sessionState() {
+      return this.session?.state ?? 0;
+    },
   },
   data() {
     const tabStore = useTabsStore();
@@ -121,21 +124,24 @@ export default {
       activeFile: null,
       editingFile: null,
       downloadShow: false, downloadProgress: 0,
+      connected: true,  // 初始值为 true，连接后保持连接状态
+      closed: false,
+    }
+  },
+  watch: {
+    sessionState: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal === 2) {
+          this.$nextTick(() => {
+            this.connect();
+          });
+        }
+      }
     }
   },
   mounted() {
-    this.connect().then(() => {
-      this.tabStore.connectSuccess(this.sessionId);
-      this.$bus.on("ssh_close_" + this.sessionId, () => {
-        this.disconnect();
-      });
-    }).catch(err => {
-      this.disconnect();
-      this.notify({
-        type: 'warning',
-        message: '连接失败:' + err,
-      });
-    });
+    this.connect().then()
   },
   beforeUnmount() {
     this.disconnect();
@@ -333,8 +339,6 @@ export default {
     disconnect() {
       if (this.closed) return;
       this.closed = true;
-      // 不再关闭SSH连接，因为SFTP和Terminal共用同一个连接
-      // SSH连接的关闭由Terminal组件处理
     },
   },
 }

@@ -1,10 +1,15 @@
 <template>
   <div class="mobile-terminal">
-    <terminal v-if="currentConn && (currentConn.type === 'connect' || currentConn.type === 'serial') && !isSftpActive"
-              :ref="'xterm_' + currentConn.sessionId"
-              :session="currentConn"/>
+    <div class="terminal-layer"
+         v-if="currentConn && (currentConn.type === 'connect' || currentConn.type === 'serial')"
+         :class="{ active: !isSftpActive }">
+      <terminal :ref="'xterm_' + currentConn.sessionId"
+                :session="currentConn"/>
+    </div>
 
-    <div v-if="currentConn && (currentConn.type === 'sftp' || (currentConn.type === 'connect' && isSftpActive))" class="sftp-container">
+    <div class="sftp-layer"
+         v-if="currentConn && isSftpActive"
+         :class="{ active: isSftpActive }">
       <div class="mobile-sftp-header">
         <div class="header-left">
           <el-button class="back-btn" :icon="ArrowLeft" circle @click="handleBack" />
@@ -36,38 +41,32 @@ export default {
     return {
       tabStore: tabStore,
       currentConnId: null,
+      currentConn: null,
       ArrowLeft: ArrowLeft,
       Close: Close
     }
   },
   computed: {
-    currentConn() {
+    current() {
       if (!this.currentConnId) return null
       return this.tabStore.connList.find(v => v.id === this.currentConnId)
     },
     isSftpActive() {
-      return this.currentConn && this.tabStore.activeSftpSession === this.currentConn.sessionId
+      return this.currentConn.showSftp
     }
   },
   methods: {
     setActiveConn(id) {
       this.currentConnId = id
+      this.currentConn = this.current
     },
     handleBack() {
-      // 如果当前在SFTP视图，切换回Terminal视图
-      if (this.isSftpActive) {
-        this.tabStore.deactivateSftp();
-      } else {
-        this.$bus.emit('show-host-list')
-      }
+      this.currentConn.showSftp = false
+      this.$bus.emit('show-host-list')
     },
     handleClose() {
-      // 关闭SFTP时切换回Terminal视图
-      if (this.isSftpActive) {
-        this.tabStore.deactivateSftp();
-      } else {
-        this.$bus.emit('tab-only-one')
-      }
+      this.currentConn.showSftp = false
+      this.$bus.emit('tab-only-one')
     },
     async onBackButtonPress() {
       if ((this.currentConn?.type === 'sftp' || this.isSftpActive) && this.$refs['sftp_' + this.currentConn.sessionId]) {
@@ -92,15 +91,28 @@ export default {
   height: 100%;
   background: var(--bg-primary);
 
+  .terminal-layer,
+  .sftp-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+  }
+
+  .terminal-layer.active,
+  .sftp-layer.active {
+    display: flex;
+  }
+
   :deep(.terminal-container) {
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 
-.sftp-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+.sftp-layer {
   :deep(.file-list) {
     height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 180px);
   }
