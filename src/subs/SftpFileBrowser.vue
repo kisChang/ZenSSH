@@ -283,9 +283,17 @@ export default {
 
     async upload() {
       const filePath = await open({title: "Choose File Upload", multiple: false, directory: false})
+      if (!filePath) return
       const loading = this.$loading({text: "Uploading..."})
       const fileName = filePath.substring(filePath.lastIndexOf(sep) + 1)
-      const fileContent = await readFile(filePath);
+      let fileContent
+      try {
+        fileContent = await readFile(filePath)
+      } catch (err) {
+        this.notify.error('读取本地文件失败:' + err)
+        loading.close()
+        return
+      }
       invoke('ssh_sftp_write', {
         sessionId: this.sessionId,
         filePath: this.currentDir + '/' + fileName,
