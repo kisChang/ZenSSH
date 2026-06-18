@@ -357,7 +357,6 @@ export default {
 .file-manager {
   padding: 12px;
   width: 100%;
-  box-sizing: border-box;
   overflow: hidden;
 }
 

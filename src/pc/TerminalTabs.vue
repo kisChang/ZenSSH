@@ -333,6 +333,9 @@ export default {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    :deep(.file-manager){
+      height: 98%;
+    }
   }
 
   .terminal-splitter {
@@ -349,7 +352,6 @@ export default {
   }
 
   .monitor-bar {
-    flex-shrink: 0;
     height: 28px;
     padding: 0 12px;
     background: linear-gradient(90deg, var(--bg-status-start) 0%, var(--bg-status-end) 100%);
@@ -358,6 +360,10 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
 
     .monitor-content {
       flex: 1;
