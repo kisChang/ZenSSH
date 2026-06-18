@@ -13,32 +13,37 @@ import {webdavGet, webdavPut} from "@/utils/webdav.js";
 // list1: 本地列表, list2: 云端列表, keyName: 唯一键名
 function mergeList(list1 = [], list2 = [], keyName) {
     const map = new Map();
-    // 先将所有项放入 map
-    [...list1, ...list2].forEach(item => {
+
+    // 1. 先将 list1 全部放入
+    for (const item of list1) {
         map.set(item[keyName], item);
-    });
+    }
 
-    // 对于存在冲突的项（两个列表都有），比较 lastUpdate，保留较新的
+    // 2. 处理 list2 中的项：对于冲突项，比较 lastUpdate 保留较新的
     const list1Keys = new Set(list1.map(item => item[keyName]));
-    const conflictItems = list2.filter(item => list1Keys.has(item[keyName]));
 
-    for (const cloudItem of conflictItems) {
+    for (const cloudItem of list2) {
         const localItem = list1.find(item => item[keyName] === cloudItem[keyName]);
-        if (localItem && cloudItem.lastUpdate && localItem.lastUpdate) {
+
+        if (!list1Keys.has(cloudItem[keyName])) {
+            // list2 中独有的项，直接放入
+            map.set(cloudItem[keyName], cloudItem);
+        } else if (localItem && cloudItem.lastUpdate && localItem.lastUpdate) {
             // 双方都有 lastUpdate，比较时间，保留较新的
-            if (cloudItem.lastUpdate > localItem.lastUpdate) {
-                map.set(cloudItem[keyName], cloudItem);
+            if (localItem.lastUpdate >= cloudItem.lastUpdate) {
+                // 本地较新或相同，保持本地
             } else {
-                map.set(cloudItem[keyName], localItem);
+                // 云端较新，覆盖本地
+                map.set(cloudItem[keyName], cloudItem);
             }
         } else if (cloudItem.lastUpdate && !localItem.lastUpdate) {
             // 云端有时间戳，本地没有，优先用云端
             map.set(cloudItem[keyName], cloudItem);
         } else if (!cloudItem.lastUpdate && localItem.lastUpdate) {
-            // 本地有时间戳，云端没有，优先用本地
-            map.set(cloudItem[keyName], localItem);
+            // 本地有时间戳，云端没有，优先用本地（什么都不做）
+        } else if (!cloudItem.lastUpdate && !localItem.lastUpdate) {
+            // 都没有 lastUpdate，保持现有逻辑（用云端，即什么都不做）
         }
-        // 如果都没有 lastUpdate，保持现有逻辑（后面覆盖前面，即用云端）
     }
 
     return Array.from(map.values());
@@ -122,6 +127,7 @@ export const appConfigStore = defineStore('AppConf', {
 
         // 删除标记，用于多端同步删除
         deletedIds: [],
+        credentialDeletedIds: [],
     }),
     actions: {
         saveSetting(setting) {
@@ -184,8 +190,8 @@ export const appConfigStore = defineStore('AppConf', {
             for (let config of confData.configList) {
                 delete config.isCloud
             }
-            // 添加凭据删除标记（用于凭据的多端同步删除）
-            confData.credentialDeletedIds = confData.credentialDeletedIds || [];
+            // 添加凭据删除标记（用于凭据的多端同步删除）- 从 appConfigStore 获取
+            confData.credentialDeletedIds = this.credentialDeletedIds || [];
             // 确保版本号存在（用于多端配置升级协调）
             confData._version = confData._version || 0;
             let content = JSON.stringify(confData)
@@ -341,15 +347,25 @@ export const appConfigStore = defineStore('AppConf', {
                 'credentialId'
             );
 
-            // 合并删除标记（云端 + 本地）- 主机配置
+            // 合并删除标记（云端 + appConfigStore + 本地 useMngStore）- 主机配置
             const cloudDeletedIds = cloudContent.deletedIds || [];
-            const mergedDeletedIds = mergeDeletedIds(cloudDeletedIds, this.deletedIds);
+            // 先合并云端和 appConfigStore，再合并本地 useMngStore
+            const mergedDeletedIds = mergeDeletedIds(
+                mergeDeletedIds(cloudDeletedIds, this.deletedIds),
+                localContent.deletedIds || []
+            );
             // 用删除标记过滤已删除的主机配置
             const deletedIdSet = new Set(mergedDeletedIds.map(d => d.configId));
             mergedList = mergedList.filter(item => !deletedIdSet.has(item.configId));
 
-            // 合并凭据删除标记
-            const mergedCredDeletedIds = mergeDeletedIds(cloudContent.credentialDeletedIds, localContent.credentialDeletedIds);
+            // 合并凭据删除标记（云端 + 本地 useMngStore + appConfigStore）
+            const mergedCredDeletedIds = mergeDeletedIds(
+                mergeDeletedIds(
+                    cloudContent.credentialDeletedIds || [],
+                    localContent.credentialDeletedIds || []
+                ),
+                appConfigStore().credentialDeletedIds || []
+            );
             // 用删除标记过滤已删除的凭据
             const deletedCredIdSet = new Set(mergedCredDeletedIds.map(d => d.configId));
             mergedCredentialList = mergedCredentialList.filter(item => !deletedCredIdSet.has(item.credentialId));
@@ -362,20 +378,19 @@ export const appConfigStore = defineStore('AppConf', {
             }));
 
             // 更新 store 状态
-            useMngStore().$state = {
+            useMngStore().$patch({
                 _version: mergedVersion,
                 configList: mergedList,
                 credentialList: mergedCredentialList,
                 credentialDeletedIds: mergedCredDeletedIds,
                 deletedIds: mergedDeletedIds,
-            };
+            });
 
             // 更新本地删除标记并清理过期记录
             this.deletedIds = mergedDeletedIds;
             this.cleanupDeletedIds();
             // 清理过期凭据删除标记
-            const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
-            useMngStore().credentialDeletedIds = mergedCredDeletedIds.filter(d => d.deletedAt >= cutoff);
+            this.cleanupCredentialDeletedIds();
 
             // 同步完成后，检查并执行配置升级
             // 如果云端版本更高，或合并后需要升级，在此触发
@@ -509,11 +524,8 @@ export const useMngStore = defineStore('UserConf', {
             const duplicateCredentials = [];
 
             this.credentialList.forEach(cred => {
-                // 使用 username@host 格式作为唯一标识（与 name 格式一致）
-                const key = (cred.username && cred.host)
-                    ? (cred.username + '@' + cred.host).toLowerCase()
-                    : (cred.name || '').toLowerCase();
-
+                // 凭据的 name 字段已经是 username@host 格式，直接使用
+                const key = (cred.name || '').toLowerCase();
                 if (!key) {
                     // 没有有效标识的凭据，保留
                     credentialMap.set(cred.credentialId, cred);
