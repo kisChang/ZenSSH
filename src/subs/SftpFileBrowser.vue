@@ -1,5 +1,11 @@
 <template>
-  <div class="file-manager">
+  <div
+      class="file-manager"
+      :class="{ dragging: isDragging }"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop.prevent="onDrop"
+  >
     <!-- 顶部栏 -->
     <div class="toolbar">
       <div class="path">📂 {{ currentDir }}</div>
@@ -126,6 +132,7 @@ export default {
       downloadShow: false, downloadProgress: 0,
       connected: true,  // 初始值为 true，连接后保持连接状态
       closed: false,
+      isDragging: false,
     }
   },
   watch: {
@@ -290,6 +297,10 @@ export default {
     async upload() {
       const filePath = await open({title: "Choose File Upload", multiple: false, directory: false})
       if (!filePath) return
+      await this.uploadFile(filePath)
+    },
+
+    async uploadFile(filePath) {
       const loading = this.$loading({text: "Uploading..."})
       const fileName = filePath.substring(filePath.lastIndexOf(sep) + 1)
       let fileContent
@@ -313,20 +324,38 @@ export default {
       })
     },
 
-    async remove(item) {
-      const path = this.currentDir + '/' + item.filename
-      if (item.is_dir) {
-        await invoke('ssh_sftp_remove_dir', {
-          sessionId: this.sessionId,
-          dir: path,
-        })
-      } else {
-        await invoke('ssh_sftp_remove_file', {
-          sessionId: this.sessionId,
-          file: path,
+    onDragOver(e) {
+      if (e.dataTransfer.types.includes('Files')) {
+        this.isDragging = true
+      }
+    },
+
+    onDragLeave(e) {
+      // 仅当离开文件管理器区域时重置状态
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        this.isDragging = false
+      }
+    },
+
+    async onDrop(e) {
+      this.isDragging = false
+      const files = e.dataTransfer.files
+      if (!files || files.length === 0) return
+
+      const loading = this.$loading({text: "Uploading..."})
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        // 使用 webkitRelativePath 或 name 获取文件名
+        const filePath = file.path || file.name
+        if (!filePath) {
+          this.notify.error('无法获取文件路径')
+          continue
+        }
+        await this.uploadFile(filePath).catch(err => {
+          this.notify.error('上传失败:' + err)
         })
       }
-      await this.loadDir()
+      loading.close()
     },
 
     goUp() {
@@ -410,5 +439,28 @@ export default {
 .more {
   font-size: 20px;
   color: #999;
+}
+
+/* 拖放上传样式 */
+.file-manager.dragging {
+  position: relative;
+}
+
+.file-manager.dragging::after {
+  content: 'Drop files here to upload';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(64, 158, 255, 0.2);
+  border: 3px dashed #409eff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #409eff;
+  z-index: 100;
+  pointer-events: none;
 }
 </style>
