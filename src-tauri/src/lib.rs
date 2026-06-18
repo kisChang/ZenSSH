@@ -29,6 +29,7 @@ pub fn run() {
         .plugin(tauri_plugin_keep_screen_on::init())
         .plugin(tauri_plugin_android_battery_optimization::init())
         .plugin(tauri_plugin_keyring::init())
+        .plugin(prevent_default())
         .plugin(tauri_plugin_log::Builder::new()
             .level(log_level)
             .build());
@@ -78,4 +79,16 @@ pub fn run() {
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+
+#[cfg(debug_assertions)]
+fn prevent_default() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+  use tauri_plugin_prevent_default::Flags;
+  tauri_plugin_prevent_default::debug()
+}
+
+#[cfg(not(debug_assertions))]
+fn prevent_default() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+  tauri_plugin_prevent_default::init()
 }
