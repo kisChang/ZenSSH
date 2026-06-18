@@ -48,6 +48,20 @@
           </div>
         </template>
       </el-dialog>
+
+      <el-dialog
+          v-model="showAboutDialog"
+          title="关于 ZenSSH"
+          width="400"
+          align-center>
+        <div class="about-content">
+          <div class="version-info">版本号：{{ appVersion }}</div>
+          <div class="description">ZenSSH 是一个简洁高效的 SSH 连接管理工具</div>
+          <div class="author-link">
+            <el-link type="primary" @click="openBlog" :underline="false">官网</el-link>
+          </div>
+        </div>
+      </el-dialog>
     </el-header>
     <el-splitter>
       <el-splitter-panel :min="200" :size="asideSize">
@@ -67,6 +81,7 @@
 import { markRaw } from 'vue';
 import {check} from '@tauri-apps/plugin-updater';
 import {openUrl} from '@tauri-apps/plugin-opener';
+import {getVersion} from '@tauri-apps/api/app';
 import {exit, relaunch} from '@tauri-apps/plugin-process';
 import ConnectManage from "./views/ConnectManage.vue";
 import CredentialManage from "./views/CredentialManage.vue";
@@ -84,6 +99,8 @@ export default {
       asideSize: 200,
       activeMenu: "",
       showUpdater: false,
+      showAboutDialog: false,
+      appVersion: null,
       activeSessionId: null,
       panelMode: 'host', // 'host' | 'credential'
       isDownloading: false,
@@ -93,6 +110,9 @@ export default {
     }
   },
   mounted() {
+    getVersion().then(ver => {
+      this.appVersion = ver;
+    })
     this.handleCheckUpdate();
   },
   methods: {
@@ -185,6 +205,9 @@ export default {
       exit(0).then()
     },
     showAbout(){
+      this.showAboutDialog = true;
+    },
+    openBlog(){
       openUrl("https://blog.kischang.top").then()
     },
   }
@@ -198,6 +221,22 @@ export default {
   background: linear-gradient(135deg, var(--bg-header-start) 0%, var(--bg-header-end) 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.about-content {
+  text-align: center;
+  .version-info {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 16px;
+  }
+  .description {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .author-link {
+    margin-top: 16px;
+    font-size: 16px;
+  }
 }
 .aside-hidden {
   width: 0 !important;
