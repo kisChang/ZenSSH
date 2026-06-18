@@ -301,27 +301,31 @@ export default {
     },
 
     async uploadFile(filePath) {
-      const loading = this.$loading({text: "Uploading..."})
       const fileName = filePath.substring(filePath.lastIndexOf(sep) + 1)
       let fileContent
       try {
         fileContent = await readFile(filePath)
       } catch (err) {
         this.notify.error('读取本地文件失败:' + err)
-        loading.close()
         return
       }
-      invoke('ssh_sftp_write', {
-        sessionId: this.sessionId,
-        filePath: this.currentDir + '/' + fileName,
-        data: fileContent
-      }).then(() => {
+      await this.uploadFileByContent(fileName, fileContent)
+    },
+
+    async uploadFileByContent(fileName, fileContent) {
+      const loading = this.$loading({text: "Uploading..."})
+      try {
+        await invoke('ssh_sftp_write', {
+          sessionId: this.sessionId,
+          filePath: this.currentDir + '/' + fileName,
+          data: fileContent
+        })
         this.loadDir().catch()
-      }).catch(err=> {
+      } catch (err) {
         this.notify.error('Fail:' + err)
-      }).finally(()=> {
+      } finally {
         loading.close()
-      })
+      }
     },
 
     onDragOver(e) {
@@ -342,20 +346,24 @@ export default {
       const files = e.dataTransfer.files
       if (!files || files.length === 0) return
 
-      const loading = this.$loading({text: "Uploading..."})
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        // 使用 webkitRelativePath 或 name 获取文件名
-        const filePath = file.path || file.name
-        if (!filePath) {
-          this.notify.error('无法获取文件路径')
+        const fileName = file.name
+        if (!fileName) {
+          this.notify.error('无法获取文件名')
           continue
         }
-        await this.uploadFile(filePath).catch(err => {
-          this.notify.error('上传失败:' + err)
-        })
+        // 使用 Web API 读取文件内容
+        try {
+          const arrayBuffer = await file.arrayBuffer()
+          const fileContent = new Uint8Array(arrayBuffer)
+          await this.uploadFileByContent(fileName, fileContent).catch(err => {
+            this.notify.error('上传失败:' + err)
+          })
+        } catch (err) {
+          this.notify.error('读取文件失败:' + err)
+        }
       }
-      loading.close()
     },
 
     goUp() {
