@@ -31,7 +31,7 @@
       </div>
 
       <!-- 使用 splitter 分割 terminal 和 sftp (仅SSH连接) -->
-      <div v-else-if="item.type === 'connect'" class="ssh-container">
+      <div v-else-if="item.config.type === 'ssh'" class="ssh-container">
         <el-splitter direction="vertical" class="terminal-splitter">
           <el-splitter-panel>
             <terminal :ref="'xterm_' + item.sessionId" :session="item"/>
@@ -53,7 +53,9 @@
         </div>
       </div>
 
-      <terminal v-else-if="item.type === 'serial'" :ref="'xterm_' + item.sessionId" :session="item"/>
+      <terminal v-else-if="item.config.type === 'serial'" :ref="'xterm_' + item.sessionId"
+                class="terminal-fill"
+                :session="item"/>
     </el-tab-pane>
 
     <el-dropdown
@@ -246,45 +248,6 @@ export default {
   height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
   background: var(--bg-panel);
   border-top: 1px solid var(--tabs-border-top);
-
-  :deep(.el-tabs__header) {
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--tabs-header-border);
-    margin: 0;
-    padding: 0 8px;
-  }
-
-  :deep(.el-tabs__nav-wrap::after) {
-    display: none;
-  }
-
-  :deep(.el-tabs__item) {
-    padding: 0 16px;
-    height: 38px;
-    line-height: 38px;
-    color: var(--text-secondary);
-    font-size: 13px;
-    background: transparent;
-    transition: all 0.2s ease;
-    border-radius: 6px 6px 0 0;
-    margin: 4px 2px 0;
-
-    &:hover {
-      color: var(--text-primary);
-      background: var(--tabs-item-hover-bg);
-    }
-  }
-
-  :deep(.el-tabs__item.is-active) {
-    color: var(--text-primary);
-    background: linear-gradient(180deg, var(--tabs-item-active-bg-start) 0%, var(--tabs-item-active-bg-end) 100%);
-    font-weight: 500;
-    box-shadow: 0 -2px 8px var(--tabs-item-active-shadow);
-  }
-
-  :deep(.el-tabs__active-bar) {
-    display: none;
-  }
 
   :deep(.el-tabs__content) {
     height: calc(100% - 46px);

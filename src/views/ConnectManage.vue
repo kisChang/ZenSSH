@@ -222,7 +222,7 @@ export default {
   .title {
     font-size: 1rem;
     color: var(--text-primary);
-    line-height: 1.1;
+    line-height: 1.1rem;
     margin-bottom: 2px;
     transition: color 0.2s ease;
     white-space: nowrap;
@@ -231,7 +231,7 @@ export default {
   }
   .subtitle {
     font-size: 0.9rem;
-    line-height: 10px;
+    line-height: 1rem;
     color: var(--text-secondary);
     transition: color 0.2s ease;
     white-space: nowrap;
