@@ -487,12 +487,6 @@ export default {
       }
     }
   }
-
-  /* 配置页面布局 */
-  .mobile-setting {
-    max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px);
-    overflow: scroll;
-  }
 }
 
 .slide-left-enter-active,

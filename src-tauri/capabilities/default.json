@@ -32,7 +32,9 @@
     "clipboard-manager:allow-write-text",
     "dialog:default",
     "fs:default",
+    "fs:read-files",
     "fs:write-files",
+    "fs:allow-read-file",
     "fs:allow-write-file",
     "fs:allow-download-write"
   ]
