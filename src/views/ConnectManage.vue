@@ -16,17 +16,19 @@
         :force-fallback="true">
       <template #item="{ element }">
         <div class="config-item" @dblclick.stop="configReConnect(element)" @contextmenu.stop="handleContextmenu($event, element)">
-          <div class="title">{{ element.name }}</div>
-          <div class="subtitle">
-            <el-icon v-if="element.isCloud" color="#22c55e">
-              <UploadFilled/>
-            </el-icon>
-            <template v-if="element.type === 'serial'">
-              {{ element.portName }} @ {{ element.baudRate }}
-            </template>
-            <template v-else>
-              {{ element.username }}@{{ element.host }}
-            </template>
+          <div class="title">
+            {{ element.name }}
+            <span class="subtitle">
+              <template v-if="element.type === 'serial'">
+                ({{ element.portName }} @ {{ element.baudRate }})
+              </template>
+              <template v-else>
+                ({{ element.username }}@{{ element.host }})
+              </template>
+            </span>
+          </div>
+          <div class="more-btn" @click.stop="handleContextmenu($event, element)">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>
           </div>
         </div>
       </template>
@@ -199,47 +201,67 @@ export default {
 }
 
 .config-item {
-  padding: 8px;
+  padding: 5px;
   margin: 5px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   user-select: none;
   cursor: grab;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   &:hover {
-    background: var(--bg-card);
-    border-color: var(--border-color-active);
-    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
-    transform: translateY(-1px);
-    .title {
-      color: var(--color-primary);
-    }
-    .subtitle {
-      color: var(--text-secondary);
-    }
+    background: var(--bg-hover);
   }
+
   .title {
     font-size: 1rem;
     color: var(--text-primary);
     line-height: 1.1rem;
-    margin-bottom: 2px;
-    transition: color 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    flex: 1;
+    .subtitle {
+      font-size: 0.8rem;
+      line-height: 1.1rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+    }
   }
-  .subtitle {
-    font-size: 0.9rem;
-    line-height: 1rem;
-    color: var(--text-secondary);
-    transition: color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    :deep(.el-icon svg) {
-      width: 12px;
-      height: 12px;
+
+  .more-btn {
+    padding: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .config-item {
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    &:hover {
+      background: var(--bg-card);
+      border-color: var(--border-color-active);
+      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+      transform: translateY(-1px);
+      .title {
+        color: var(--color-primary);
+      }
+      .subtitle {
+        color: var(--text-secondary);
+      }
     }
   }
 }
