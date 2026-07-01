@@ -50,8 +50,10 @@ log = "0.4"
 tokio = "1.52"
 tokio-util = "0.7"
 once_cell = "1.21"
-serialport = "4.7"
 bytes = "1"
+
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+serialport = "4.7"
 tokio-serial = "5.4"
 
 [dev-dependencies]

@@ -2,6 +2,7 @@ mod encrypt;
 mod ssh;
 mod sftp;
 mod monitor;
+#[cfg(not(target_os = "ios"))]
 mod serial;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -59,9 +60,13 @@ pub fn run() {
         ssh::ssh_close_port_forward,
         ssh::ssh_list_port_forwards,
         // 串口通讯
+        #[cfg(not(target_os = "ios"))]
         serial::serial_list,
+        #[cfg(not(target_os = "ios"))]
         serial::serial_connect,
+        #[cfg(not(target_os = "ios"))]
         serial::serial_write,
+        #[cfg(not(target_os = "ios"))]
         serial::serial_close,
         // 加解密支持
         encrypt::encrypt_derive_key,
