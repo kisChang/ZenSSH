@@ -1,6 +1,6 @@
 [package]
 name = "ZenSSH"
-version = "0.5.5"
+version = "0.5.6"
 description = "SSH/Sftp/Serial terminal"
 authors = ["KisChang"]
 edition = "2021"
