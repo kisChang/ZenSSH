@@ -45,7 +45,7 @@
                 <div class="conn-info"
                      @click="selectConn(item)">
                   <div class="conn-title">{{ item.title }}</div>
-                  <div v-if="item.config?.type === 'serial' && item.state === 1" class="serial-indicator">
+                  <div v-if="item.config?.type === 'serial' && item.state === 1 && !isIos" class="serial-indicator">
                     <el-icon :size="10" color="#E6A23C"><Cpu /></el-icon>
                     <span class="serial-text">Serial</span>
                   </div>
@@ -141,6 +141,7 @@ export default {
       showTerminal: false,
       transitionName: 'slide-left',
       tabIndexMap: { 'host': 0, 'credential': 1, 'conn': 2, 'setting': 3 },
+      isIos: isIos(),
     }
   },
   watch: {

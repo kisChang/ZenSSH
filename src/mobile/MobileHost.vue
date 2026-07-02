@@ -18,7 +18,7 @@
       </el-scrollbar>
     </div>
     <div v-else-if="configList.length" style="text-align: center;">
-      <div class="filter-bar">
+      <div v-if="!isIos" class="filter-bar">
         <el-radio-group v-model="filterType" text-color="#fff" fill="#67C23A">
           <el-radio-button value="all">All</el-radio-button>
           <el-radio-button value="ssh">SSH</el-radio-button>
@@ -85,6 +85,7 @@
 import ConnectForm, {DEFAULT_CONFIG} from "@/subs/ConnectForm.vue";
 import {useMngStore} from "@/store.js";
 import draggable from "vuedraggable";
+import {isIos} from "@/commons.js";
 
 export default {
   name: "MobileHost",
@@ -94,6 +95,7 @@ export default {
     const defaultConfig = Object.assign({}, DEFAULT_CONFIG);
     return {
       appMng: appMng,
+      isIos: isIos(),
       showConnect: false,
       configAdd: true,
       filterType: 'all',
@@ -109,7 +111,11 @@ export default {
     },
     configListModel: {
       get() {
-        return this.configList
+        if (this.isIos) {
+          return this.configList.filter(c => c.type !== "serial")
+        } else {
+          return this.configList
+        }
       },
       set(newList) {
         this.appMng.reorderConfig(newList.map(c => c.configId))

@@ -4,7 +4,7 @@
       <el-radio-group v-model="filterType" size="small">
         <el-radio-button value="all">All</el-radio-button>
         <el-radio-button value="ssh">SSH</el-radio-button>
-        <el-radio-button value="serial">{{ $t('connect.typeSerial') }}</el-radio-button>
+        <el-radio-button value="serial" v-if="!isIos">{{ $t('connect.typeSerial') }}</el-radio-button>
       </el-radio-group>
     </div>
     <draggable
@@ -19,10 +19,10 @@
           <div class="title">
             {{ element.name }}
             <span class="subtitle">
-              <template v-if="element.type === 'serial'">
+              <template v-if="element.type === 'serial' && !isIos">
                 ({{ element.portName }} @ {{ element.baudRate }})
               </template>
-              <template v-else>
+              <template v-else-if="element.type !== 'serial' || !isIos">
                 ({{ element.username }}@{{ element.host }})
               </template>
             </span>
@@ -81,7 +81,7 @@
 <script>
 import ConnectForm, {DEFAULT_CONFIG} from "@/subs/ConnectForm.vue";
 import {useMngStore, useTabsStore} from "@/store.js";
-import {isMobile} from "@/commons.js";
+import {isMobile, isIos} from "@/commons.js";
 import draggable from "vuedraggable";
 
 export default {
@@ -92,6 +92,7 @@ export default {
     const defaultConfig = Object.assign({}, DEFAULT_CONFIG);
     return {
       isMobile: false,
+      isIos: isIos(),
       appMng: appMng,
       showConnect: false,
       configAdd: true,
@@ -106,7 +107,11 @@ export default {
   },
   computed: {
     configList() {
-      const list = this.appMng.sortedConfigList
+      let list = this.appMng.sortedConfigList
+      // iOS 平台过滤掉串口配置
+      if (this.isIos) {
+        list = list.filter(c => c.type !== 'serial')
+      }
       if (this.filterType === 'all') return list
       return list.filter(c => c.type === this.filterType)
     },

@@ -4,7 +4,7 @@
     <el-form-item :label="$t('connect.type')" prop="type" v-if="!isEdit">
       <el-radio-group v-model="config.type" @change="handleTypeChange">
         <el-radio value="ssh">SSH</el-radio>
-        <el-radio value="serial">{{ $t('connect.typeSerial') }}</el-radio>
+        <el-radio value="serial" v-if="!isIos">{{ $t('connect.typeSerial') }}</el-radio>
       </el-radio-group>
     </el-form-item>
 
@@ -211,6 +211,7 @@
 <script>
 import {invoke} from "@tauri-apps/api/core";
 import {useMngStore} from "@/store.js";
+import {isIos} from "@/commons.js";
 import CredentialForm from "./CredentialForm.vue";
 
 export const DEFAULT_PF = {
@@ -288,6 +289,9 @@ export default {
     }
   },
   computed: {
+    isIos() {
+      return isIos();
+    },
     filterBastionSessions() {
       if (this.config?.configId) {
         return this.bastionSessions.filter(x => x.configId !== this.config.configId)

@@ -20,6 +20,11 @@ export function notify(options) {
 export function genId() {
     return crypto.randomUUID().replace(/-/g, '');
 }
+
+export function isIos() {
+    return type() === 'ios';
+}
+
 export function isMobile() {
     const p = type();
     if (p === 'android' || p === 'ios') {
