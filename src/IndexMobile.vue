@@ -121,7 +121,7 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 import {onBackButtonPress} from "@tauri-apps/api/app";
-import {isMobile} from "@/commons.js";
+import {isMobile, isIos} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
 import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
