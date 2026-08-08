@@ -28,9 +28,7 @@ export function isIos() {
 export function isMobile() {
     const p = type();
     if (p === 'android' || p === 'ios') {
-        if (window.screen.width < 600) {
-            return true;
-        }
+        return true;
     }
     return false;
 }
