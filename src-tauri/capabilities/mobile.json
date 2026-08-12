@@ -1,0 +1,11 @@
+{
+  "identifier": "mobile",
+  "description": "Mobile capability",
+  "windows": ["main"],
+  "platforms": ["iOS", "android"],
+  "permissions": [
+    "mobile-onbackpressed-listener:allow-register-back-event",
+    "mobile-onbackpressed-listener:allow-registerListener",
+    "mobile-onbackpressed-listener:allow-remove-listener"
+  ]
+}

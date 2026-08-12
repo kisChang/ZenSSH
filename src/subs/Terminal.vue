@@ -17,7 +17,7 @@
 
 <script>
 import {Channel, invoke} from "@tauri-apps/api/core";
-import {writeText} from '@tauri-apps/plugin-clipboard-manager';
+import {writeText, readText} from '@tauri-apps/plugin-clipboard-manager';
 import {Terminal} from "@xterm/xterm";
 import {FitAddon} from "@xterm/addon-fit";
 import {ProgressAddon} from "@xterm/addon-progress";
@@ -372,6 +372,7 @@ export default {
     // PC端复制功能
     bindPCCopyEvents() {
       if (!this.term) return
+      // 选中即复制
       this.term.onSelectionChange(() => {
         const selectionText = this.term.getSelection()
         if (selectionText && selectionText.trim()) {
@@ -387,6 +388,38 @@ export default {
             })
           })
         }
+      })
+      // Ctrl+C / Ctrl+V 快捷键拦截
+      this.term.attachCustomKeyEventHandler((e) => {
+        if (e.type !== 'keydown') return true
+        // Ctrl+C：有选中时复制，无选中时放行让 xterm 发送 SIGINT(\x03)
+        if (e.ctrlKey && (e.code === 'KeyC' || e.key === 'c')) {
+          if (this.term.hasSelection()) {
+            const selectionText = this.term.getSelection()
+            if (selectionText && selectionText.trim()) {
+              writeText(selectionText).then(() => {
+                this.$notify({ type: 'success', message: '已复制到剪切板' })
+              }).catch(err => {
+                this.$notify({ type: 'error', message: '复制到剪切板失败：' + err })
+              })
+            }
+            return false // 阻止 xterm 处理，避免误发 SIGINT
+          }
+          return true // 无选中，交由 xterm 发送 \x03
+        }
+        // Ctrl+V：粘贴剪切板内容到远端
+        if (e.ctrlKey && (e.code === 'KeyV' || e.key === 'v')) {
+          readText().then(text => {
+            if (text) {
+              // 应该是不需要
+              // this.term.paste(text)
+            }
+          }).catch(err => {
+            this.$notify({ type: 'error', message: '读取剪切板失败：' + err })
+          })
+          return false // 阻止 xterm/浏览器默认粘贴行为
+        }
+        return true
       })
     },
 
