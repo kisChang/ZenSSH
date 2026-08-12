@@ -26,6 +26,7 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.1",
     "@element-plus/icons-vue": "^2.3.2",
+    "@kingsword/tauri-plugin-mobile-onbackpressed-listener": "npm:@jsr/kingsword__tauri-plugin-mobile-onbackpressed-listener",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-clipboard-manager": "~2",
     "@tauri-apps/plugin-dialog": "~2",

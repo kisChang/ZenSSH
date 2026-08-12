@@ -399,6 +399,13 @@
   resolved "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz"
   integrity sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==
 
+"@kingsword/tauri-plugin-mobile-onbackpressed-listener@npm:@jsr/kingsword__tauri-plugin-mobile-onbackpressed-listener":
+  version "2.0.1"
+  resolved "https://npm.jsr.io/~/11/@jsr/kingsword__tauri-plugin-mobile-onbackpressed-listener/2.0.1.tgz#B067846552478D46711732E6537E8E7FCD3B46E7"
+  integrity sha512-ar5kx47BAaRrQf5HRtG2b1BTQk6WXhwuZOzGHQw6y1EEgDJnGuWw8D6xNMXIl6iHfoMo9qS3qPLbhA0fDlH8/g==
+  dependencies:
+    "@tauri-apps/api" "^2"
+
 "@lezer/common@^1.0.0", "@lezer/common@^1.0.2", "@lezer/common@^1.1.0", "@lezer/common@^1.2.0", "@lezer/common@^1.2.1", "@lezer/common@^1.3.0", "@lezer/common@^1.5.0":
   version "1.5.2"
   resolved "https://registry.npmmirror.com/@lezer/common/-/common-1.5.2.tgz"

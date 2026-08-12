@@ -30,6 +30,11 @@ pub fn run() {
         .plugin(tauri_plugin_keep_screen_on::init())
         .plugin(tauri_plugin_android_battery_optimization::init())
         .plugin(tauri_plugin_keyring::init())
+        .setup(|app| {
+            #[cfg(any(target_os = "ios", target_os = "android"))]
+            app.handle().plugin(tauri_plugin_mobile_onbackpressed_listener::init())?;
+            Ok(())
+        })
         .plugin(prevent_default())
         .plugin(tauri_plugin_log::Builder::new()
             .level(log_level)

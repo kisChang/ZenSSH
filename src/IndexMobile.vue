@@ -120,7 +120,7 @@ import MobileCredential from "@/mobile/MobileCredential.vue";
 import MobileSetting from "@/mobile/MobileSetting.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
-import {onBackButtonPress} from "@tauri-apps/api/app";
+import {registerBackEvent} from "@kingsword/tauri-plugin-mobile-onbackpressed-listener";
 import {isMobile, isIos} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
 import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key} from "@element-plus/icons-vue";
@@ -184,7 +184,11 @@ export default {
     })
 
     if (isMobile()) {
-      onBackButtonPress(this.onBackButtonPress)
+      registerBackEvent(() => {
+        this.onBackButtonPress()
+      }).catch(err => {
+        console.error('registerBackEvent fail: ', err)
+      })
     }
   },
   methods: {

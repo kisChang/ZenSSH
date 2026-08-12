@@ -56,6 +56,9 @@ bytes = "1"
 serialport = "4.7"
 tokio-serial = "5.4"
 
+[target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
+tauri-plugin-mobile-onbackpressed-listener = "2.0.0"
+
 [dev-dependencies]
 tauri-plugin-devtools = "2"
 
