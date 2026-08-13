@@ -313,17 +313,48 @@ export default {
     },
 
     async uploadFileByContent(fileName, fileContent) {
-      const loading = this.$loading({text: "Uploading..."})
+      const loading = this.$loading({
+        text: 'Uploading 0%'
+      })
+
       try {
-        await invoke('ssh_sftp_write', {
-          sessionId: this.sessionId,
-          filePath: this.currentDir + '/' + fileName,
-          data: fileContent
-        })
-        this.loadDir().catch()
+        const chunkSize = 1024 * 1024 // 1MB
+        const totalSize = fileContent.byteLength
+        const filePath = this.currentDir + '/' + fileName
+
+        // 第一块写入时后端会自动 CREATE | TRUNCATE，无需单独创建文件
+        if (totalSize === 0) {
+          // 空文件：直接 write 空数据以创建文件
+          await invoke('ssh_sftp_write', {
+            sessionId: this.sessionId,
+            filePath,
+            data: new Uint8Array([])
+          })
+        }
+
+        for (let offset = 0; offset < totalSize; offset += chunkSize) {
+          const end = Math.min(offset + chunkSize, totalSize)
+
+          // Uint8Array 子视图，不复制整个文件
+          const chunk = fileContent.subarray(offset, end)
+
+          await invoke('ssh_sftp_write_chunk', {
+            sessionId: this.sessionId,
+            filePath,
+            offset,
+            data: chunk
+          })
+
+          const percent = Math.floor(
+              (end / totalSize) * 100
+          )
+          loading.setText(`Uploading ${percent}%`)
+        }
       } catch (err) {
-        this.notify.error('Fail:' + err)
+        this.notify.error('Fail: ' + err)
+        console.log(err)
       } finally {
+        await this.loadDir()
         loading.close()
       }
     },

@@ -178,6 +178,20 @@ pub async fn ssh_sftp_read_text(
 }
 
 #[tauri::command]
+pub async fn ssh_sftp_create(
+    session_id: &str,
+    file_path: &str,
+) -> Result<(), String> {
+    let sftp = ssh_get_sftp(session_id).await?;
+
+    sftp.create(file_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn ssh_sftp_write(
     session_id: &str,
     file_path: &str,
@@ -189,6 +203,44 @@ pub async fn ssh_sftp_write(
 
     use tokio::io::AsyncWriteExt;
     file.write_all(&data).await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn ssh_sftp_write_chunk(
+    session_id: &str,
+    file_path: &str,
+    offset: u64,
+    data: Vec<u8>,
+) -> Result<(), String> {
+    let sftp = ssh_get_sftp(session_id).await?;
+
+    use russh_sftp::protocol::OpenFlags;
+    use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+
+    // 第一块（offset == 0）创建并截断文件；后续块只以写模式打开，保留已有内容
+    let mut flags = OpenFlags::WRITE | OpenFlags::CREATE;
+    if offset == 0 {
+        flags |= OpenFlags::TRUNCATE;
+    }
+
+    let mut file = sftp
+        .open_with_flags(file_path, flags)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    file.seek(std::io::SeekFrom::Start(offset))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    file.write_all(&data)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 显式刷盘并关闭，确保该块落盘后再处理下一块
+    file.flush().await.map_err(|e| e.to_string())?;
+    file.shutdown().await.map_err(|e| e.to_string())?;
 
     Ok(())
 }
