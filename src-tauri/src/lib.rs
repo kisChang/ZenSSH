@@ -14,11 +14,6 @@ pub fn run() {
     };
 
     let mut builder = tauri::Builder::default()
-        .setup(|_app| {
-            #[cfg(desktop)]
-            _app.handle().plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
-            Ok(())
-        })
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -30,9 +25,12 @@ pub fn run() {
         .plugin(tauri_plugin_keep_screen_on::init())
         .plugin(tauri_plugin_android_battery_optimization::init())
         .plugin(tauri_plugin_keyring::init())
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(any(target_os = "ios", target_os = "android"))]
-            app.handle().plugin(tauri_plugin_mobile_onbackpressed_listener::init())?;
+            _app.handle().plugin(tauri_plugin_mobile_onbackpressed_listener::init())?;
+
+            #[cfg(desktop)]
+            _app.handle().plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
             Ok(())
         })
         .plugin(prevent_default())

@@ -27,8 +27,10 @@ export function isIos() {
 
 export function isMobile() {
     const p = type();
+    const isLandscape = window.matchMedia('(orientation: landscape)').matches;
     if (p === 'android' || p === 'ios') {
-        return true;
+        // 横屏时使用PC端样式
+        return !isLandscape;
     }
     return false;
 }
