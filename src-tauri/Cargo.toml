@@ -44,6 +44,7 @@ data-encoding = "2"       # base64/hex 编码
 # keep background
 tauri-plugin-keep-screen-on = "0.1"
 tauri-plugin-android-battery-optimization = "0.1"
+tauri-plugin-backpressed = "0.1.0"
 
 anyhow = "1.0"
 log = "0.4"
@@ -55,9 +56,6 @@ bytes = "1"
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 serialport = "4.7"
 tokio-serial = "5.4"
-
-[target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
-tauri-plugin-mobile-onbackpressed-listener = "2.0.0"
 
 [dev-dependencies]
 tauri-plugin-devtools = "2"

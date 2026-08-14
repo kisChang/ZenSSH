@@ -113,6 +113,7 @@ import {
   checkBatteryOptimizationStatus,
   requestBatteryOptimizationExemption,
 } from 'tauri-plugin-android-battery-optimization-api';
+import {onBackpressed} from "tauri-plugin-backpressed";
 import ConnectManage from "@/views/ConnectManage.vue";
 import MobileTerminal from "@/mobile/MobileTerminal.vue";
 import MobileHost from "@/mobile/MobileHost.vue";
@@ -120,7 +121,6 @@ import MobileCredential from "@/mobile/MobileCredential.vue";
 import MobileSetting from "@/mobile/MobileSetting.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
-import {registerBackEvent} from "@kingsword/tauri-plugin-mobile-onbackpressed-listener";
 import {isMobile, isIos} from "@/commons.js";
 import {exit} from "@tauri-apps/plugin-process";
 import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key} from "@element-plus/icons-vue";
@@ -184,8 +184,11 @@ export default {
     })
 
     if (isMobile()) {
-      registerBackEvent(() => {
+      onBackpressed(async (event) => {
         this.onBackButtonPress()
+        return true;
+        // return true  -> JS 处理
+        // return false -> native 默认处理
       }).catch(err => {
         console.error('registerBackEvent fail: ', err)
       })
