@@ -44,7 +44,6 @@ data-encoding = "2"       # base64/hex 编码
 # keep background
 tauri-plugin-keep-screen-on = "0.1"
 tauri-plugin-android-battery-optimization = "0.1"
-tauri-plugin-backpressed = "0.1.0"
 
 anyhow = "1.0"
 log = "0.4"

@@ -113,7 +113,6 @@ import {
   checkBatteryOptimizationStatus,
   requestBatteryOptimizationExemption,
 } from 'tauri-plugin-android-battery-optimization-api';
-import {onBackpressed} from "tauri-plugin-backpressed";
 import ConnectManage from "@/views/ConnectManage.vue";
 import MobileTerminal from "@/mobile/MobileTerminal.vue";
 import MobileHost from "@/mobile/MobileHost.vue";
@@ -184,14 +183,12 @@ export default {
     })
 
     if (isMobile()) {
-      onBackpressed(async (event) => {
+      /* TODO 待实现
+      onBackpressed((event) => {
         this.onBackButtonPress()
-        return true;
-        // return true  -> JS 处理
-        // return false -> native 默认处理
       }).catch(err => {
         console.error('registerBackEvent fail: ', err)
-      })
+      })*/
     }
   },
   methods: {

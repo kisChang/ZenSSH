@@ -25,10 +25,7 @@ pub fn run() {
         .plugin(tauri_plugin_keep_screen_on::init())
         .plugin(tauri_plugin_android_battery_optimization::init())
         .plugin(tauri_plugin_keyring::init())
-        .plugin(tauri_plugin_backpressed::init())
         .setup(|_app| {
-//             #[cfg(any(target_os = "ios", target_os = "android"))]
-//             _app.handle().plugin(tauri_plugin_mobile_onbackpressed_listener::init())?;
             #[cfg(desktop)]
             _app.handle().plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
             Ok(())

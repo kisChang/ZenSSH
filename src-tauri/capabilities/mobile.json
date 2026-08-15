@@ -4,9 +4,5 @@
   "windows": ["main"],
   "platforms": ["iOS", "android"],
   "permissions": [
-    "backpressed:allow-resolve-backpressed",
-    "backpressed:allow-resolve-backpressed-mobile",
-    "backpressed:allow-register-listener",
-    "backpressed:allow-remove-listener"
   ]
 }
