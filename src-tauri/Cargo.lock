@@ -21,7 +21,6 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-android-battery-optimization",
- "tauri-plugin-backpressed",
  "tauri-plugin-clipboard-manager",
  "tauri-plugin-devtools",
  "tauri-plugin-dialog",
@@ -6669,18 +6668,6 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "tauri-plugin-backpressed"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "123b7729cd16b7d4cc2a650c90d97b874f63cf484e3a2a8857d46e392f5eebf8"
-dependencies = [
- "serde",
- "tauri",
- "tauri-plugin",
- "thiserror 1.0.69",
 ]
 
 [[package]]

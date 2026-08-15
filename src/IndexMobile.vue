@@ -121,12 +121,15 @@ import MobileSetting from "@/mobile/MobileSetting.vue";
 import ServerMonitor from "@/subs/ServerMonitor.vue";
 import {useTabsStore} from "@/store.js";
 import {isMobile, isIos} from "@/commons.js";
+import swipeBackMixin from "@/mixins/swipeBack.js";
 import {exit} from "@tauri-apps/plugin-process";
 import {Loading, Link, CircleCloseFilled, Connection, Files, ArrowRight, Paperclip, Folder, Cpu, Key} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
+import {onBackButtonPress} from "@tauri-apps/api/app";
 
 export default {
   name: "IndexMobile",
+  mixins: [swipeBackMixin],
   props: {
     isLoading: false,
   },
@@ -183,15 +186,15 @@ export default {
     })
 
     if (isMobile()) {
-      /* TODO 待实现
-      onBackpressed((event) => {
-        this.onBackButtonPress()
-      }).catch(err => {
-        console.error('registerBackEvent fail: ', err)
-      })*/
+      // 安卓端支持侧滑返回
+      onBackButtonPress(this.onBackButtonPress)
     }
   },
   methods: {
+    // iOS端 使用mixins swipeBack.js 侧滑返回触发，复用物理返回键逻辑
+    onSwipeBack() {
+      this.onBackButtonPress()
+    },
     // 处理安卓端返回事件的支持
     onBackButtonPress() {
       ElMessageBox.close()
