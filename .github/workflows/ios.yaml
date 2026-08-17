@@ -63,56 +63,11 @@ jobs:
       - name: install icon
         run: yarn icon
 
-      - name: Install provisioning profile
-        env:
-          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
-        run: |
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          
-          echo "$IOS_MOBILE_PROVISION" \
-            | base64 --decode \
-            > "$HOME/Library/MobileDevice/Provisioning Profiles/f18af002-3492-488c-875c-a70634fd1444.mobileprovision"
-          
-          echo "Installed provisioning profile:"
-          ls -lh "$HOME/Library/MobileDevice/Provisioning Profiles/"
-          
-          security cms -D \
-            -i "$HOME/Library/MobileDevice/Provisioning Profiles/f18af002-3492-488c-875c-a70634fd1444.mobileprovision" \
-            > /tmp/profile.plist
-          
-          /usr/libexec/PlistBuddy \
-            -c "Print :Name" /tmp/profile.plist
-          
-          /usr/libexec/PlistBuddy \
-            -c "Print :UUID" /tmp/profile.plist
-
-      - name: Check Xcode destinations
-        run: |
-          xcodebuild \
-            -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
-            -scheme ZenSSH_iOS \
-            -showdestinations
-
-      - name: Inspect signing settings
-        run: |
-          grep -E \
-            'CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|PRODUCT_BUNDLE_IDENTIFIER' \
-            src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj || true
-
-      - name: Fix iOS signing identity
-        run: |
-          PBXPROJ="src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj"
-          sed -i '' 's/iOS Development/Apple Development/g' "$PBXPROJ"
-          echo "===== Signing settings ====="
-          grep -E \
-            'CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|PRODUCT_BUNDLE_IDENTIFIER' \
-            "$PBXPROJ" || true
-
       - name: Tauri Project build
         if: matrix.mobile == 'ios'
         env:
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+#          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
           APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
         run: yarn tauri ios build
