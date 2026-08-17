@@ -70,6 +70,21 @@ jobs:
             -scheme ZenSSH_iOS \
             -showdestinations
 
+      - name: Check signing assets
+        env:
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+        run: |
+          echo "$IOS_MOBILE_PROVISION" | base64 --decode > /tmp/ZenSSH.mobileprovision
+          
+          echo "===== Provisioning Profile ====="
+          security cms -D -i /tmp/ZenSSH.mobileprovision > /tmp/profile.plist
+          
+          /usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :TeamIdentifier" /tmp/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :Entitlements:get-task-allow" /tmp/profile.plist
+
       - name: Tauri Project build
         if: matrix.mobile == 'ios'
         env:
