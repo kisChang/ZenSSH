@@ -46,13 +46,6 @@ jobs:
         with:
           xcode-version: 26.1
 
-      - name: setup Manual Signing
-        if: matrix.mobile == 'ios'
-        run: |
-          echo "${{ secrets.IOS_CERTIFICATE }}" > $IOS_CERTIFICATE
-          echo "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" > $IOS_CERTIFICATE_PASSWORD
-          echo "${{ secrets.IOS_MOBILE_PROVISION }}" > $IOS_MOBILE_PROVISION
-
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
@@ -71,5 +64,9 @@ jobs:
         run: yarn icon
 
       - name: Tauri Project build
-        if: matrix.mobile != ''
+        if: matrix.mobile == 'ios'
+        env:
+          IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
         run: yarn tauri ios build
