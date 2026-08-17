@@ -93,11 +93,10 @@ jobs:
             -scheme ZenSSH_iOS \
             -showdestinations
 
-      - name: Xcode build test
+      - name: Test automatic signing
         env:
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
         run: |
           xcodebuild \
             -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
@@ -106,7 +105,6 @@ jobs:
             -configuration release \
             -destination 'generic/platform=iOS' \
             DEVELOPMENT_TEAM=BKTSDVCXRA \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY="Apple Development" \
-            PROVISIONING_PROFILE_SPECIFIER=f18af002-3492-488c-875c-a70634fd1444 \
             build
