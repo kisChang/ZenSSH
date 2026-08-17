@@ -93,18 +93,26 @@ jobs:
             -scheme ZenSSH_iOS \
             -showdestinations
 
-      - name: Test automatic signing
+      - name: Inspect signing settings
+        run: |
+          grep -E \
+            'CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|PRODUCT_BUNDLE_IDENTIFIER' \
+            src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj || true
+
+      - name: Fix iOS signing identity
+        run: |
+          PBXPROJ="src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj"
+          sed -i '' 's/iOS Development/Apple Development/g' "$PBXPROJ"
+          echo "===== Signing settings ====="
+          grep -E \
+            'CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|PRODUCT_BUNDLE_IDENTIFIER' \
+            "$PBXPROJ" || true
+
+      - name: Tauri Project build
+        if: matrix.mobile == 'ios'
         env:
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-        run: |
-          xcodebuild \
-            -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
-            -scheme ZenSSH_iOS \
-            -sdk iphoneos \
-            -configuration release \
-            -destination 'generic/platform=iOS' \
-            DEVELOPMENT_TEAM=BKTSDVCXRA \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Development" \
-            build
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
+        run: yarn tauri ios build
