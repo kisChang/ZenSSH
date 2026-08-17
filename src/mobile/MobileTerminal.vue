@@ -95,7 +95,7 @@ export default {
   z-index: 99;
   position: fixed;
   top: env(safe-area-inset-top);
-  bottom: env(safe-area-inset-bottom);
+  bottom: 0;
   left: 0;
   right: 0;
 
@@ -136,8 +136,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   height: 56px;
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
+  padding: env(safe-area-inset-top) 16px 0;
   background: var(--bg-header-start);
   border-bottom: 1px solid var(--border-color);
 

@@ -201,6 +201,8 @@ export default {
       display: flex;
       align-items: center;
       text-align: left;
+      width: 100%;
+      box-sizing: border-box;
       padding: 10px 15px;
       margin-bottom: 10px;
       background: var(--bg-card);
