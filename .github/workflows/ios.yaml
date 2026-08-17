@@ -66,13 +66,61 @@ jobs:
       - name: Tauri Project build
         if: matrix.mobile == 'ios'
         env:
-          CODE_SIGNING_REQUIRED: NO
-          CODE_SIGNING_ALLOWED: NO
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
           IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
-          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
-        run: yarn tauri ios build
+        run: |
+          set -e
+          
+          echo "Starting Tauri iOS build in background..."
+          
+          yarn tauri ios build --open --ci > /tmp/tauri-ios-build.log 2>&1 &
+          TAURI_PID=$!
+          
+          echo "$TAURI_PID" > /tmp/tauri-ios-build.pid
+          
+          echo "Tauri PID: $TAURI_PID"
+          
+          # 等待 Xcode 工程生成
+          echo "Waiting for Xcode project..."
+          
+          for i in {1..120}; do
+            if [ -f "src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj" ]; then
+              echo "Xcode project is ready."
+              break
+            fi
+          
+            if ! kill -0 "$TAURI_PID" 2>/dev/null; then
+              echo "Tauri process exited unexpectedly."
+              cat /tmp/tauri-ios-build.log
+              exit 1
+            fi
+          
+            sleep 1
+          done
+          
+          if [ ! -f "src-tauri/gen/apple/ZenSSH.xcodeproj/project.pbxproj" ]; then
+            echo "Timed out waiting for Xcode project."
+            cat /tmp/tauri-ios-build.log
+            exit 1
+          fi
+          
+          echo "===== Tauri log ====="
+          tail -100 /tmp/tauri-ios-build.log
+
+      - name: Build unsigned iOS archive
+        shell: bash
+        run: |
+          set -e
+          
+          xcodebuild archive \
+            -project src-tauri/gen/apple/ZenSSH.xcodeproj \
+            -scheme ZenSSH_iOS \
+            -archivePath src-tauri/gen/apple/build/ZenSSH.xcarchive \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload IPA to GitHub Release
         env:
