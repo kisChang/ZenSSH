@@ -63,27 +63,35 @@ jobs:
       - name: install icon
         run: yarn icon
 
+      - name: Install provisioning profile
+        env:
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          
+          echo "$IOS_MOBILE_PROVISION" \
+            | base64 --decode \
+            > "$HOME/Library/MobileDevice/Provisioning Profiles/f18af002-3492-488c-875c-a70634fd1444.mobileprovision"
+          
+          echo "Installed provisioning profile:"
+          ls -lh "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          
+          security cms -D \
+            -i "$HOME/Library/MobileDevice/Provisioning Profiles/f18af002-3492-488c-875c-a70634fd1444.mobileprovision" \
+            > /tmp/profile.plist
+          
+          /usr/libexec/PlistBuddy \
+            -c "Print :Name" /tmp/profile.plist
+          
+          /usr/libexec/PlistBuddy \
+            -c "Print :UUID" /tmp/profile.plist
+
       - name: Check Xcode destinations
         run: |
           xcodebuild \
             -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
             -scheme ZenSSH_iOS \
             -showdestinations
-
-      - name: Check signing assets
-        env:
-          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
-        run: |
-          echo "$IOS_MOBILE_PROVISION" | base64 --decode > /tmp/ZenSSH.mobileprovision
-          
-          echo "===== Provisioning Profile ====="
-          security cms -D -i /tmp/ZenSSH.mobileprovision > /tmp/profile.plist
-          
-          /usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist
-          /usr/libexec/PlistBuddy -c "Print :UUID" /tmp/profile.plist
-          /usr/libexec/PlistBuddy -c "Print :TeamIdentifier" /tmp/profile.plist
-          /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile.plist
-          /usr/libexec/PlistBuddy -c "Print :Entitlements:get-task-allow" /tmp/profile.plist
 
       - name: Tauri Project build
         if: matrix.mobile == 'ios'
