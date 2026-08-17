@@ -93,11 +93,20 @@ jobs:
             -scheme ZenSSH_iOS \
             -showdestinations
 
-      - name: Tauri Project build
-        if: matrix.mobile == 'ios'
+      - name: Xcode build test
         env:
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
           IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
-          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
-        run: yarn tauri ios build
+        run: |
+          xcodebuild \
+            -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
+            -scheme ZenSSH_iOS \
+            -sdk iphoneos \
+            -configuration release \
+            -destination 'generic/platform=iOS' \
+            DEVELOPMENT_TEAM=BKTSDVCXRA \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Development" \
+            PROVISIONING_PROFILE_SPECIFIER=f18af002-3492-488c-875c-a70634fd1444 \
+            build
