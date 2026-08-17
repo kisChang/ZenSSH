@@ -263,7 +263,8 @@ export default {
 <style scoped lang="scss">
 .keyboard {
   background: #222;
-  padding: 5px;
+  padding: clamp(5px, 1.2vw, 8px);
+  padding-bottom: clamp(6px, 1.5vw, 10px);
   margin-bottom: 10px;
   user-select: none;
   touch-action: manipulation;
@@ -281,7 +282,10 @@ export default {
 .row {
   display: flex;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: clamp(4px, 1vw, 6px);
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 /* slide 过渡动画 */
@@ -303,28 +307,53 @@ export default {
 
 button {
   flex: 1;
-  margin: 2px;
+  margin: clamp(2px, 0.5vw, 3px);
   padding: 6px 0;
-  font-size: 16px;
+  font-size: clamp(15px, 3.6vw, 19px);
+  line-height: 1;
   background: var(--bg-card);
   color: var(--text-primary);
   border: none;
-  border-radius: 6px;
-  height: 36px !important;
-  max-height: 36px !important;
+  border-radius: 7px;
+  /* 高度随屏宽放大，但受 vh 上限约束，确保 7 行键盘不超出视口可容纳范围 */
+  height: min(clamp(38px, 9vw, 52px), 7vh) !important;
+  max-height: min(clamp(38px, 9vw, 52px), 7vh) !important;
 
   &.placeholder {
     background: none;
     padding: 0;
-    flex: 0.3;
+    flex: 0.35;
   }
 
   &.active {
     background: var(--color-primary);
     &.keep {
-      font-size: 15px;
+      font-size: clamp(14px, 3.2vw, 17px);
     }
   }
 }
 
+/* 平板竖屏（≥600px）：放大按键与图标，提升触控体验 */
+@media (min-width: 600px) {
+  .keyboard {
+    padding: 8px 10px 10px;
+    margin-bottom: 14px;
+  }
+  .row {
+    margin-bottom: 6px;
+  }
+  button {
+    margin: 3px;
+    border-radius: 8px;
+    font-size: 18px;
+    height: min(52px, 7vh) !important;
+    max-height: min(52px, 7vh) !important;
+  }
+  :deep(.key-btn-toggle) {
+    svg {
+      width: 34px;
+      height: 28px;
+    }
+  }
+}
 </style>

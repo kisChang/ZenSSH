@@ -66,9 +66,16 @@ export default {
       this.updateTerminalSize();
       // 监听容器大小变化
       this.resizeObserver = new ResizeObserver(() => {
-        this.fitTerminal();
+        if (this.enableKeyboard) {
+          this.updateTerminalSize();
+        } else {
+          this.fitTerminal();
+        }
       });
       this.resizeObserver.observe(this.$refs.container);
+      // 监听键盘实际高度变化（旋转/折叠/展开），重算终端预留空间
+      const kbEl = this.$el && this.$el.querySelector('.footer-keyboard .keyboard');
+      if (kbEl) this.resizeObserver.observe(kbEl);
     }).catch(err => {
       this.disconnect();
       this.$notify({
@@ -334,7 +341,12 @@ export default {
     },
     updateTerminalSize() {
       if (!this.term || !this.fitAddon) return
-      const footerHeight = (this.enableKeyboard ? 350 : 0);
+      let footerHeight = 0;
+      if (this.enableKeyboard) {
+        // 测量键盘实际渲染高度，替代硬编码 350px，避免按键放大后键盘被裁切
+        const kb = this.$el && this.$el.querySelector('.footer-keyboard .keyboard');
+        footerHeight = kb ? kb.offsetHeight : 350;
+      }
       // Terminal 距离底部
       this.termStyle.height = footerHeight + 'px';
       this.$nextTick(async () => {
