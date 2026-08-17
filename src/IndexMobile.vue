@@ -291,7 +291,7 @@ export default {
 .hosts-page {
   position: fixed;
   top: env(safe-area-inset-top);
-  bottom: env(safe-area-inset-bottom);
+  bottom: 0;
   left: 0;
   right: 0;
   background: var(--bg-primary);
@@ -524,7 +524,7 @@ export default {
 
 .tabbar {
   flex-shrink: 0;
-  height: 65px;
+  height: 55px;
   display: flex;
   background: var(--bg-header-start);
   border-top: 1px solid var(--border-color);
