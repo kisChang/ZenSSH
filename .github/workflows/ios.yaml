@@ -63,35 +63,16 @@ jobs:
       - name: install icon
         run: yarn icon
 
-#      - name: Tauri Project build
-#        if: matrix.mobile == 'ios'
-#        env:
-#          IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
-#          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-#          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
-#          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
-#        run: yarn tauri ios build
-
-      - name: Build unsigned iOS archive
-        run: |
-          xcodebuild archive \
-            -project src-tauri/gen/apple/ZenSSH.xcodeproj \
-            -scheme ZenSSH_iOS \
-            -archivePath src-tauri/gen/apple/build/ZenSSH.xcarchive \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Package unsigned IPA
-        run: |
-          mkdir -p ipa/Payload
-          cp -R \
-            src-tauri/gen/apple/build/ZenSSH.xcarchive/Products/Applications/ZenSSH_iOS.app \
-            ipa/Payload/
-          
-          cd ipa
-          zip -r ../ZenSSH-unsigned.ipa Payload
+      - name: Tauri Project build
+        if: matrix.mobile == 'ios'
+        env:
+          CODE_SIGNING_REQUIRED: NO
+          CODE_SIGNING_ALLOWED: NO
+          IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
+        run: yarn tauri ios build
 
       - name: Upload IPA to GitHub Release
         env:
@@ -99,5 +80,5 @@ jobs:
         run: |
           gh release upload \
             "${{ github.ref_name }}" \
-            ZenSSH-unsigned.ipa \
+            src-tauri/gen/apple/build/arm64/ZenSSH.ipa \
             --clobber
