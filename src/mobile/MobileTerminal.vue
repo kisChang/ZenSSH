@@ -1,29 +1,33 @@
 <template>
   <div class="mobile-terminal">
-    <div class="terminal-layer"
-         v-if="currentConn && (currentConn.type === 'connect' || currentConn.type === 'serial')"
-         :class="{ active: !isSftpActive }">
-      <terminal :ref="'xterm_' + currentConn.sessionId"
-                :session="currentConn"/>
-    </div>
-
-    <div class="sftp-layer"
-         v-if="currentConn && isSftpActive"
-         :class="{ active: isSftpActive }">
-      <div class="mobile-sftp-header">
-        <div class="header-left">
-          <el-button class="back-btn" :icon="ArrowLeft" circle @click="handleBack" />
-        </div>
-        <div class="header-center">
-          <span class="header-title">SFTP</span>
-        </div>
-        <div class="header-right">
-          <el-button class="back-btn" :icon="Close" circle @click="handleClose" />
-        </div>
+    <template v-for="item in tabStore.connList" :key="item.id">
+      <!-- 终端层：每个连接都保持挂载，通过 active 类控制显示 -->
+      <div class="terminal-layer"
+           v-if="item.type === 'connect' || item.type === 'serial'"
+           :class="{ active: currentConnId === item.id && !item.showSftp }">
+        <terminal :ref="'xterm_' + item.sessionId"
+                  :session="item"/>
       </div>
-      <sftp-file-browser :ref="'sftp_' + currentConn.sessionId"
-                         :session="currentConn"/>
-    </div>
+
+      <!-- SFTP 层：仅在该连接打开 SFTP 时渲染 -->
+      <div class="sftp-layer"
+           v-if="item.type === 'connect' && item.showSftp"
+           :class="{ active: currentConnId === item.id && item.showSftp }">
+        <div class="mobile-sftp-header">
+          <div class="header-left">
+            <el-button class="back-btn" :icon="ArrowLeft" circle @click="handleBack" />
+          </div>
+          <div class="header-center">
+            <span class="header-title">SFTP</span>
+          </div>
+          <div class="header-right">
+            <el-button class="back-btn" :icon="Close" circle @click="handleClose" />
+          </div>
+        </div>
+        <sftp-file-browser :ref="'sftp_' + item.sessionId"
+                           :session="item"/>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -41,36 +45,44 @@ export default {
     return {
       tabStore: tabStore,
       currentConnId: null,
-      currentConn: null,
       ArrowLeft: ArrowLeft,
       Close: Close
     }
   },
   computed: {
-    current() {
+    // 始终从 store 实时获取当前连接，避免引用过期
+    currentConn() {
       if (!this.currentConnId) return null
-      return this.tabStore.connList.find(v => v.id === this.currentConnId)
+      return this.tabStore.connList.find(v => v.id === this.currentConnId) || null
     },
     isSftpActive() {
-      return this.currentConn.showSftp
+      return this.currentConn?.showSftp || false
     }
   },
   methods: {
     setActiveConn(id) {
       this.currentConnId = id
-      this.currentConn = this.current
     },
     handleBack() {
-      this.currentConn.showSftp = false
+      if (this.currentConn) {
+        this.currentConn.showSftp = false
+      }
       this.$bus.emit('show-host-list')
     },
     handleClose() {
-      this.currentConn.showSftp = false
+      if (this.currentConn) {
+        this.currentConn.showSftp = false
+      }
       this.$bus.emit('tab-only-one')
     },
     async onBackButtonPress() {
-      if ((this.currentConn?.type === 'sftp' || this.isSftpActive) && this.$refs['sftp_' + this.currentConn.sessionId]) {
-        return this.$refs['sftp_' + this.currentConn.sessionId].onBackButtonPress()
+      if (this.currentConn && this.isSftpActive) {
+        const ref = this.$refs['sftp_' + this.currentConn.sessionId]
+        // v-for 中的动态 ref 可能是数组，兼容访问
+        const sftp = Array.isArray(ref) ? ref[0] : ref
+        if (sftp) {
+          return sftp.onBackButtonPress()
+        }
       }
       return true
     }
