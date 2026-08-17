@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-26'
+          - platform: 'macos-14'
             args: '--verbose'
             mobile: 'ios'
 
@@ -44,7 +44,7 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         if: matrix.mobile == 'ios'
         with:
-          xcode-version: 26.1
+          xcode-version: 16.2
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -63,10 +63,18 @@ jobs:
       - name: install icon
         run: yarn icon
 
+      - name: Check Xcode destinations
+        run: |
+          xcodebuild \
+            -workspace src-tauri/gen/apple/ZenSSH.xcodeproj/project.xcworkspace \
+            -scheme ZenSSH_iOS \
+            -showdestinations
+
       - name: Tauri Project build
         if: matrix.mobile == 'ios'
         env:
           IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
           IOS_MOBILE_PROVISION: ${{ secrets.IOS_MOBILE_PROVISION }}
+          APPLE_DEVELOPMENT_TEAM: BKTSDVCXRA
         run: yarn tauri ios build
