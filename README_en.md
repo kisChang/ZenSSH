@@ -20,6 +20,8 @@ ZenSSH is a cross-platform SSH client built with Tauri, supporting SSH connectio
 
 The goal of this project is to meet daily SSH usage needs **while keeping it lightweight and performant**, avoiding unnecessary complex features, making it ideal for developers and operations personnel.
 
+Note: The iOS version has been tested on actual devices, but it is not available on the App Store. You need to build and install it yourself.
+
 ## Features
 
 * [x] SSH / SFTP / Jump Server / Serial
